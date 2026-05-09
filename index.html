@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Receipt</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- LZ-STRING INCORPORATED FOR DECOMPRESSION -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Fullscreen Reset for Iframe rendering */
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background-color: #f3f4f6; }
+    </style>
+</head>
+<body class="font-sans antialiased text-gray-800 flex items-center justify-center">
+
+    <!-- This container holds either the loading state, the error state, or the full HTML iframe -->
+    <div id="receipt-container" class="w-full h-full flex flex-col items-center justify-center">
+        <div class="flex flex-col items-center justify-center py-10" id="loading-state">
+            <i data-lucide="loader-2" class="w-10 h-10 animate-spin text-gray-400 mb-4"></i>
+            <p class="text-gray-500 font-medium">Processing Digital Bill...</p>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const container = document.getElementById('receipt-container');
+            
+            // 1. Grab the compressed LZ-String payload from the URL hash
+            const compressedHash = window.location.hash.substring(1);
+
+            if (!compressedHash) {
+                container.innerHTML = `
+                    <div class="bg-white p-8 rounded-xl shadow-lg text-center max-w-sm">
+                        <i data-lucide="alert-circle" class="w-12 h-12 mx-auto text-red-500 mb-3"></i>
+                        <h2 class="text-xl font-bold text-gray-800">Invalid Link</h2>
+                        <p class="text-gray-500 mt-2 text-sm">No billing data was found in this QR code.</p>
+                    </div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            try {
+                // 2. Decompress the Base62 URL-Safe string back into the raw HTML string
+                const rawHtmlString = LZString.decompressFromEncodedURIComponent(compressedHash);
+                
+                if (!rawHtmlString || rawHtmlString.trim() === '') {
+                    throw new Error("Decompression resulted in empty data");
+                }
+
+                // 3. Instead of parsing JSON, render the raw HTML directly.
+                // We use an iframe to isolate the invoice's original CSS/Styles from this page's Tailwind CSS.
+                container.innerHTML = ''; // Clear loading spinner
+                
+                const iframe = document.createElement('iframe');
+                iframe.style.width = '100%';
+                iframe.style.height = '100%';
+                iframe.style.border = 'none';
+                iframe.style.backgroundColor = '#ffffff';
+                
+                container.appendChild(iframe);
+
+                // Safely write the decompressed HTML document into the iframe
+                iframe.contentWindow.document.open();
+                iframe.contentWindow.document.write(rawHtmlString);
+                iframe.contentWindow.document.close();
+
+            } catch (error) {
+                console.error("Failed to parse bill HTML data", error);
+                container.innerHTML = `
+                    <div class="bg-white p-8 rounded-xl shadow-lg text-center max-w-sm">
+                        <i data-lucide="x-circle" class="w-12 h-12 mx-auto text-red-500 mb-3"></i>
+                        <h2 class="text-xl font-bold text-gray-800">Scan Error</h2>
+                        <p class="text-gray-500 mt-2 text-sm">The QR code data is corrupted or cannot be read.</p>
+                    </div>`;
+                lucide.createIcons();
+            }
+        });
+    </script>
+</body>
+</html>
