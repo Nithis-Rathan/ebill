@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Digital Receipt</title>
 
-    <!-- Tailwind CSS for styling -->
+    <!-- Tailwind CSS for styling the background/buttons -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Pako library for fast browser-based decompression -->
@@ -15,118 +15,363 @@
         body {
             background-color: #f3f4f6;
             font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+            margin: 0;
         }
 
-        .receipt-container {
-            position: relative;
+        /* Container to center the paper on screen with a nice shadow */
+        .receipt-wrapper {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto 2rem auto;
+        }
+
+        /* ==============================================================
+           EXACT POS TERMINAL RECEIPT CSS (Extracted from INV-*.html)
+           ============================================================== */
+        .receipt-paper {
             background: #fff;
-            padding: 2rem;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            /* Zig-zag jagged edge effect at the top and bottom to simulate a physical receipt */
-            background-image: 
-                radial-gradient(circle at 10px 0, transparent 10px, #fff 11px),
-                radial-gradient(circle at 10px 100%, transparent 10px, #fff 11px);
-            background-size: 20px 20px;
-            background-repeat: repeat-x;
-            background-position: top center, bottom center;
-            border-top: 10px solid transparent;
-            border-bottom: 10px solid transparent;
+            width: 100%;
+            max-width: 80mm; /* Standard thermal printer width */
+            margin: 0 auto;
+            padding: 5mm;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            color: #000;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            line-height: 1.45;
+            word-break: break-word;
+            overflow-wrap: break-word;
         }
 
-        /* Hide buttons during physical or PDF printing */
+        .receipt-paper .text-center { text-align: center; }
+        .receipt-paper .text-right { text-align: right; }
+        .receipt-paper .font-bold { font-weight: bold; font-size: 13px; }
+        
+        .receipt-paper .title-text { 
+            font-weight: bold; 
+            font-size: 15px; 
+            text-align: center; 
+            line-height: 1.3; 
+            margin-bottom: 2px; 
+        }
+        
+        .receipt-paper .divider { 
+            border: none; 
+            border-top: 1px dashed #000; 
+            margin: 4px 0; 
+        }
+        
+        .receipt-paper table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            table-layout: fixed; 
+        }
+        
+        .receipt-paper th, .receipt-paper td { 
+            padding: 2px 1px; 
+            vertical-align: top; 
+            word-break: break-word; 
+            overflow-wrap: break-word; 
+        }
+        
+        .receipt-paper th { 
+            text-align: left; 
+            border-bottom: 1px dashed #000; 
+        }
+        
+        .receipt-paper .col-item { width: auto; }
+        .receipt-paper .col-qty { width: 34px; text-align: center; white-space: nowrap; }
+        .receipt-paper .col-price { width: 85px; text-align: right; white-space: nowrap; }
+        
+        .receipt-paper .summary-table td:first-child { width: auto; }
+        .receipt-paper .summary-table td:last-child { width: 85px; text-align: right; white-space: nowrap; }
+        
+        .receipt-paper .header-info { font-size: 12px; }
+        .receipt-paper .mt-2 { margin-top: 6px; }
+
+        /* ==============================================================
+           PRINT ENGINE OVERRIDES 
+           ============================================================== */
         @media print {
             body {
                 background-color: #fff;
+                padding: 0;
             }
             .hide-on-print {
                 display: none !important;
             }
-            .receipt-container {
-                box-shadow: none;
-                border: none;
-                background-image: none;
+            .receipt-wrapper {
+                max-width: 100%;
+                margin: 0;
             }
+            .receipt-paper {
+                box-shadow: none;
+                width: 80mm !important; /* Force exact physical width for thermal printers */
+                max-width: 80mm !important;
+                padding: 0;
+                margin: 0;
+            }
+            @page {
+                size: 80mm auto;
+                margin: 0;
+            }
+        }
+        
+        /* Fallback styling for loading state or errors */
+        .fallback-box {
+            background: #fff;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            width: 100%;
+            text-align: center;
+            font-family: sans-serif;
         }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4">
-
-    <div class="w-full max-w-md">
-        
-        <div class="receipt-container mt-4 mb-8 rounded">
-            <!-- Receipt Header -->
-            <div class="border-b-2 border-dashed border-gray-400 pb-4 mb-4 text-center">
-                <h1 class="text-2xl font-bold uppercase tracking-widest text-gray-800">E-Bill</h1>
-                <p class="text-gray-500 text-sm mt-1">Digital Copy</p>
-            </div>
-
-            <!-- Receipt Content (dynamically populated) -->
-            <pre id="receipt-content" class="whitespace-pre-wrap text-sm leading-relaxed text-gray-800">Loading receipt data...</pre>
-            
-            <!-- Receipt Footer -->
-            <div class="border-t-2 border-dashed border-gray-400 pt-4 mt-6 text-center">
-                <p class="font-bold text-gray-700">Thank you for your visit!</p>
-                <p class="text-xs text-gray-500 mt-2">Have a great day</p>
+<body>
+    <div class="receipt-wrapper">
+        <div id="receipt-container">
+            <div class="fallback-box text-gray-500">
+                <svg class="animate-spin h-8 w-8 mx-auto mb-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                Loading receipt data...
             </div>
         </div>
+    </div>
 
-        <!-- Action Buttons -->
-        <div class="flex flex-col sm:flex-row gap-3 justify-center hide-on-print">
-            <button onclick="window.print()" class="px-6 py-3 bg-gray-800 text-white font-bold rounded shadow hover:bg-black transition-colors flex-1">
-                Print / Save PDF
-            </button>
-            <a href="javascript:history.back()" class="px-6 py-3 bg-gray-200 text-gray-800 font-bold rounded shadow hover:bg-gray-300 transition-colors text-center flex-1">
-                Go Back
-            </a>
-        </div>
-
+    <!-- Action Buttons -->
+    <div class="flex flex-col sm:flex-row gap-3 justify-center hide-on-print w-full max-w-sm">
+        <button onclick="window.print()" class="px-6 py-3 bg-gray-800 text-white font-bold rounded-lg shadow hover:bg-black transition-colors flex-1 flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+            Print / Save PDF
+        </button>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const params = new URLSearchParams(window.location.search);
-            const cdata = params.get('cdata'); // Compressed Base64 Data
-            const data = params.get('data');   // Fallback uncompressed URI encoded data
+            const cdata = params.get('cdata'); 
+            const data = params.get('data');   
             
-            const receiptContent = document.getElementById('receipt-content');
+            const container = document.getElementById('receipt-container');
 
             try {
+                let decompressedText = "";
+                
                 if (cdata) {
-                    // 1. Revert URL-safe characters back to standard Base64
+                    // Revert URL-safe characters back to standard Base64
                     let base64 = cdata.replace(/-/g, '+').replace(/_/g, '/');
-                    
-                    // 2. Pad string with "=" to ensure valid base64 length
-                    while (base64.length % 4) {
-                        base64 += '=';
-                    }
-                    
-                    // 3. Decode base64 to binary string
+                    while (base64.length % 4) { base64 += '='; }
                     const binaryStr = atob(base64);
-                    
-                    // 4. Convert binary string to byte array
                     const bytes = new Uint8Array(binaryStr.length);
                     for (let i = 0; i < binaryStr.length; i++) {
                         bytes[i] = binaryStr.charCodeAt(i);
                     }
-                    
-                    // 5. Decompress the byte array back to the original text using Pako
-                    const decompressedText = pako.inflateRaw(bytes, { to: 'string' });
-                    receiptContent.textContent = decompressedText;
-                } 
-                else if (data) {
-                    // Fallback logic exactly matching your uncompressed example URL
-                    receiptContent.textContent = decodeURIComponent(data);
-                } 
-                else {
-                    receiptContent.textContent = "\n\nError: No receipt data found in the URL.\n\nPlease scan a valid E-Bill QR Code.";
-                    receiptContent.classList.add("text-red-500", "text-center");
+                    // Decompress the string perfectly
+                    decompressedText = pako.inflateRaw(bytes, { to: 'string' });
+                } else if (data) {
+                    decompressedText = decodeURIComponent(data);
+                } else {
+                    throw new Error("No data");
                 }
+
+                // Decide how to render it: if it contains our minification keys, build the exact POS table.
+                if (decompressedText.includes('a:') || decompressedText.includes('f:')) {
+                    renderStyledReceipt(decompressedText, container);
+                } else {
+                    // Fallback for very old links
+                    container.innerHTML = `<pre class="whitespace-pre-wrap text-sm leading-relaxed text-gray-800 bg-white p-6 rounded shadow">${decompressedText}</pre>`;
+                }
+
             } catch (error) {
                 console.error("Decoding error:", error);
-                receiptContent.textContent = "\n\nError: Unable to decode the receipt data.\n\nThe link might be broken or incomplete.";
-                receiptContent.classList.add("text-red-500", "text-center");
+                container.innerHTML = `
+                    <div class="fallback-box">
+                        <svg class="w-12 h-12 text-red-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        <h3 class="text-lg font-bold text-gray-800 mb-1">Invalid Receipt</h3>
+                        <p class="text-gray-500 text-sm">The QR code link might be broken or incomplete.</p>
+                    </div>
+                `;
             }
         });
+
+        // This function losslessly reconstructs the Exact POS Terminal HTML Layout from the minified data
+        function renderStyledReceipt(text, container) {
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+            
+            let headers = [];
+            let meta = [];
+            let items = [];
+            let summary = { subtotal: '', grandTotal: '' };
+            let adjustments = [];
+
+            for (let line of lines) {
+                // Header Meta Processing mapping from ebill.php replacements
+                if (line.startsWith('a:')) { meta.push({ label: 'Bill No', val: line.substring(2) }); continue; }
+                if (line.startsWith('b:')) { meta.push({ label: 'Date', val: line.substring(2) }); continue; }
+                if (line.startsWith('c:')) { meta.push({ label: 'Customer', val: line.substring(2) }); continue; }
+                if (line.startsWith('d:')) { meta.push({ label: 'Contact', val: line.substring(2) }); continue; }
+                if (line.startsWith('e:')) {
+                    let v = line.substring(2);
+                    let pm = (v === '1') ? 'Cash / Full Payment' : (v === '2') ? 'Online' : (v === '3') ? 'Credit' : v;
+                    meta.push({ label: 'Pay Mode', val: pm });
+                    continue;
+                }
+                if (line.startsWith('f:')) { summary.subtotal = line.substring(2); continue; }
+                if (line.startsWith('o:')) { headers.push('Ph: ' + line.substring(2)); continue; }
+
+                // Subtotal and downwards (Taxes, Charges, Grand Total section)
+                if (summary.subtotal) {
+                    if (line.startsWith('g:')) { summary.grandTotal = line.substring(2); continue; }
+                    if (line.startsWith('h:')) { summary.advance = line.substring(2); continue; }
+                    if (line.startsWith('i:')) { summary.balance = line.substring(2); continue; }
+                    if (line.startsWith('j:')) { summary.dueDate = line.substring(2); continue; }
+                    if (line.startsWith('m:')) { adjustments.push({ label: 'Rounding:', val: line.substring(2) }); continue; }
+                    
+                    if (line.includes('k:')) {
+                        let parts = line.split('k:');
+                        adjustments.push({ label: parts[0] + ' (charge):', val: parts[1].trim() }); continue;
+                    }
+                    if (line.includes('l:')) {
+                        let parts = line.split('l:');
+                        adjustments.push({ label: parts[0] + ' (tax):', val: parts[1].trim() }); continue;
+                    }
+                    if (line.startsWith('n:')) {
+                        let str = line.substring(2);
+                        let splitIdx = str.lastIndexOf(':');
+                        if (splitIdx !== -1) {
+                            adjustments.push({ label: 'Incl. ' + str.substring(0, splitIdx) + ':', val: str.substring(splitIdx+1).trim() });
+                        } else {
+                            adjustments.push({ label: 'Incl.:', val: str });
+                        }
+                        continue;
+                    }
+                }
+
+                // If it doesn't match the summary keys above, it is either a header (Top) or an Item
+                if (!summary.subtotal && meta.length === 0) {
+                    headers.push(line);
+                } else if (!summary.subtotal) {
+                    // Extract Items ("Product Name Qty Price")
+                    const parts = line.split(' ');
+                    if (parts.length >= 3) {
+                        const price = parts.pop();
+                        const qty = parts.pop();
+                        const name = parts.join(' ');
+                        items.push({ name, qty, price });
+                    } else if (parts.length === 2) {
+                        const price = parts.pop();
+                        const name = parts.join(' ');
+                        items.push({ name, qty: 1, price });
+                    } else {
+                        items.push({ name: line, qty: 1, price: '' });
+                    }
+                }
+            }
+
+            // Build Exact POS Terminal HTML Structure
+            let html = '';
+
+            if (headers.length > 0) {
+                html += `<div class="title-text">${headers[0]}</div>`;
+                for (let i = 1; i < headers.length; i++) {
+                    html += `<div class="text-center header-info">${headers[i]}</div>`;
+                }
+                html += `<div class="divider"></div>`;
+            }
+
+            meta.forEach(m => {
+                html += `<div class="header-info">${m.label}: ${m.val}</div>`;
+            });
+            
+            if (meta.length > 0) html += `<div class="divider"></div>`;
+
+            html += `
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-item">Item</th>
+                        <th class="col-qty">Qty</th>
+                        <th class="col-price">Amt</th>
+                    </tr>
+                </thead>
+                <tbody>
+            `;
+            items.forEach(i => {
+                html += `
+                    <tr>
+                        <td class="col-item">${i.name}</td>
+                        <td class="col-qty">${i.qty}</td>
+                        <td class="col-price">${i.price}</td>
+                    </tr>
+                `;
+            });
+            html += `
+                </tbody>
+            </table>
+            <div class="divider"></div>
+            <table class="summary-table">
+                <tr>
+                    <td>Subtotal:</td>
+                    <td>${summary.subtotal}</td>
+                </tr>
+            `;
+            
+            adjustments.forEach(a => {
+                html += `
+                <tr>
+                    <td>${a.label}</td>
+                    <td>${a.val}</td>
+                </tr>
+                `;
+            });
+
+            html += `
+                <tr>
+                    <td class="font-bold">Grand Total:</td>
+                    <td class="font-bold">${summary.grandTotal}</td>
+                </tr>
+            `;
+
+            if (summary.advance) {
+                html += `
+                <tr>
+                    <td>Advance Paid:</td>
+                    <td>${summary.advance}</td>
+                </tr>
+                `;
+            }
+            if (summary.balance) {
+                html += `
+                <tr>
+                    <td class="font-bold">Balance Due:</td>
+                    <td class="font-bold">${summary.balance}</td>
+                </tr>
+                `;
+            }
+            if (summary.dueDate) {
+                html += `
+                <tr>
+                    <td>Due Date:</td>
+                    <td>${summary.dueDate}</td>
+                </tr>
+                `;
+            }
+
+            html += `
+            </table>
+            <div class="divider"></div>
+            <div class="text-center mt-2 font-bold">Thank you for your visit!</div>
+            <div style="margin-top: 8px;">&nbsp;</div>
+            `;
+
+            container.innerHTML = `<div class="receipt-paper">${html}</div>`;
+        }
     </script>
 </body>
 </html>
