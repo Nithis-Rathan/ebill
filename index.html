@@ -200,6 +200,25 @@
             }
         });
 
+        // Add proper decimal formatting dynamically (adds .00 and commas back safely)
+        function formatMoney(val) {
+            if (!val) return val;
+            let numStr = val.toString().replace(/,/g, '').replace(/₹/g, '').trim();
+            
+            // Extract sign to retain it (for charges/discounts)
+            let isNegative = numStr.startsWith('-');
+            if (isNegative) numStr = numStr.substring(1);
+            let isPositive = numStr.startsWith('+');
+            if (isPositive) numStr = numStr.substring(1);
+
+            if (!isNaN(numStr) && numStr !== '') {
+                // Formatting back to professional currency standard
+                let formatted = parseFloat(numStr).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                return (isNegative ? '-' : (isPositive ? '+' : '')) + formatted;
+            }
+            return val;
+        }
+
         // This function losslessly reconstructs the Exact POS Terminal HTML Layout from the minified data
         function renderStyledReceipt(text, container) {
             const lines = text.split('\n').map(l => l.trim()).filter(l => l !== '');
@@ -211,44 +230,77 @@
             let adjustments = [];
 
             let state = 'header'; 
-            let flatItems = []; // Due to HTML formatting, Items actually arrive correctly chunked over multiple lines!
-
-            for (let i = 0; i < lines.length; i++) {
+            let flatItems = []; 
+            
+            let i = 0;
+            while (i < lines.length) {
                 let line = lines[i];
 
+                // Helper Function: Check if the value got pushed to the next physical line
+                function getValue(prefix) {
+                    let val = line.substring(prefix.length).trim();
+                    if (!val && i + 1 < lines.length) {
+                        let nextLine = lines[i+1].trim();
+                        // If the next line doesn't contain a colon (isn't a label itself), we grab it
+                        if (!nextLine.includes(':') || nextLine.match(/^\d{2}-\d{2}-\d{4}/)) {
+                            val = nextLine;
+                            i++; // Consume the next line so the loop skips it
+                        }
+                    }
+                    return val;
+                }
+
                 // 1. Trigger Summary Section
-                if (line.startsWith('Sub:') || line.startsWith('f:')) {
-                    summary.subtotal = line.startsWith('Sub:') ? line.substring(4).trim() : line.substring(2).trim();
+                if (line.startsWith('Sub:') || line.startsWith('f:') || line.startsWith('Subtotal:')) {
+                    let prefix = line.startsWith('Subtotal:') ? 'Subtotal:' : (line.startsWith('Sub:') ? 'Sub:' : 'f:');
+                    summary.subtotal = formatMoney(getValue(prefix));
                     state = 'summary';
-                    continue;
+                    i++; continue;
                 }
 
                 // 2. Process Summary Elements
                 if (state === 'summary') {
-                    if (line.startsWith('Tot:') || line.startsWith('g:')) { summary.grandTotal = line.startsWith('Tot:') ? line.substring(4).trim() : line.substring(2).trim(); continue; }
-                    if (line.startsWith('Paid:') || line.startsWith('h:')) { summary.advance = line.startsWith('Paid:') ? line.substring(5).trim() : line.substring(2).trim(); continue; }
-                    if (line.startsWith('Due:') || line.startsWith('i:')) { summary.balance = line.startsWith('Due:') ? line.substring(4).trim() : line.substring(2).trim(); continue; }
-                    if (line.startsWith('DueDt:') || line.startsWith('j:')) { summary.dueDate = line.startsWith('DueDt:') ? line.substring(6).trim() : line.substring(2).trim(); continue; }
+                    if (line.startsWith('Tot:') || line.startsWith('g:') || line.startsWith('Grand Total:')) { 
+                        let prefix = line.startsWith('Grand Total:') ? 'Grand Total:' : (line.startsWith('Tot:') ? 'Tot:' : 'g:');
+                        summary.grandTotal = formatMoney(getValue(prefix)); 
+                        i++; continue; 
+                    }
+                    if (line.startsWith('Paid:') || line.startsWith('h:') || line.startsWith('Advance Paid:')) { 
+                        let prefix = line.startsWith('Advance Paid:') ? 'Advance Paid:' : (line.startsWith('Paid:') ? 'Paid:' : 'h:');
+                        summary.advance = formatMoney(getValue(prefix)); 
+                        i++; continue; 
+                    }
+                    if (line.startsWith('Due:') || line.startsWith('i:') || line.startsWith('Balance Due:')) { 
+                        let prefix = line.startsWith('Balance Due:') ? 'Balance Due:' : (line.startsWith('Due:') ? 'Due:' : 'i:');
+                        summary.balance = formatMoney(getValue(prefix)); 
+                        i++; continue; 
+                    }
+                    if (line.startsWith('DueDt:') || line.startsWith('j:') || line.startsWith('Due Date:')) { 
+                        let prefix = line.startsWith('Due Date:') ? 'Due Date:' : (line.startsWith('DueDt:') ? 'DueDt:' : 'j:');
+                        summary.dueDate = getValue(prefix); 
+                        i++; continue; 
+                    }
                     if (line.startsWith('Rounding:') || line.startsWith('m:')) { 
-                        adjustments.push({ label: 'Rounding:', val: line.startsWith('Rounding:') ? line.substring(9).trim() : line.substring(2).trim() }); 
-                        continue; 
+                        let prefix = line.startsWith('Rounding:') ? 'Rounding:' : 'm:';
+                        adjustments.push({ label: 'Rounding:', val: formatMoney(getValue(prefix)) }); 
+                        i++; continue; 
                     }
                     
                     // Adjustments (Taxes & Charges)
                     if (line.includes(':')) {
                         let parts = line.split(':');
-                        let label = parts[0].trim();
-                        let val = parts.slice(1).join(':').trim();
+                        let labelStr = parts[0].trim();
+                        let prefix = labelStr + ':';
+                        let val = getValue(prefix);
+
+                        // Fix legacy odd labels from older ebill.php replacements (like "ACk:" -> "AC (Charge)")
+                        if (labelStr.endsWith('k')) labelStr = labelStr.slice(0, -1) + ' (Charge)';
+                        else if (labelStr.endsWith('l')) labelStr = labelStr.slice(0, -1) + ' (Tax)';
+                        else if (labelStr === 'n') labelStr = 'Incl.';
                         
-                        // Legacy single-letter fallbacks just in case
-                        if (label === 'k') label = 'Charge';
-                        if (label === 'l') label = 'Tax';
-                        if (label === 'n') label = 'Incl.';
-                        
-                        if (!label.endsWith(':')) label += ':';
-                        adjustments.push({ label: label, val: val });
+                        adjustments.push({ label: labelStr + ':', val: formatMoney(val) });
                     }
-                    continue;
+                    i++; continue;
                 }
 
                 // 3. Process Header & Meta Info
@@ -256,39 +308,52 @@
                 let metaLabel = '';
                 let metaVal = '';
 
-                // Matching exactly the replacements you provided in ebill.php
-                if (line.startsWith('Inv:')) { metaLabel = 'Bill No'; metaVal = line.substring(4); isMeta = true; }
-                else if (line.startsWith('a:')) { metaLabel = 'Bill No'; metaVal = line.substring(2); isMeta = true; }
-                else if (line.startsWith('Dt:')) { metaLabel = 'Date'; metaVal = line.substring(3); isMeta = true; }
-                else if (line.startsWith('b:')) { metaLabel = 'Date'; metaVal = line.substring(2); isMeta = true; }
-                else if (line.startsWith('Cust:')) { metaLabel = 'Customer'; metaVal = line.substring(5); isMeta = true; }
-                else if (line.startsWith('c:')) { metaLabel = 'Customer'; metaVal = line.substring(2); isMeta = true; }
-                else if (line.startsWith('Pay:')) { metaLabel = 'Pay Mode'; metaVal = line.substring(4); isMeta = true; }
-                else if (line.startsWith('e:')) { 
-                    let v = line.substring(2).trim();
+                if (line.startsWith('Inv:') || line.startsWith('a:') || line.startsWith('Bill No:')) { 
+                    let prefix = line.startsWith('Bill No:') ? 'Bill No:' : (line.startsWith('Inv:') ? 'Inv:' : 'a:');
+                    metaLabel = 'Bill No'; metaVal = getValue(prefix); isMeta = true; 
+                }
+                else if (line.startsWith('Dt:') || line.startsWith('b:') || line.startsWith('Date:')) { 
+                    let prefix = line.startsWith('Date:') ? 'Date:' : (line.startsWith('Dt:') ? 'Dt:' : 'b:');
+                    metaLabel = 'Date'; metaVal = getValue(prefix); isMeta = true; 
+                }
+                else if (line.startsWith('Cust:') || line.startsWith('c:') || line.startsWith('Customer:')) { 
+                    let prefix = line.startsWith('Customer:') ? 'Customer:' : (line.startsWith('Cust:') ? 'Cust:' : 'c:');
+                    metaLabel = 'Customer'; metaVal = getValue(prefix); isMeta = true; 
+                }
+                else if (line.startsWith('Pay:') || line.startsWith('e:') || line.startsWith('Pay Mode:')) { 
+                    let prefix = line.startsWith('Pay Mode:') ? 'Pay Mode:' : (line.startsWith('Pay:') ? 'Pay:' : 'e:');
+                    let v = getValue(prefix);
                     metaLabel = 'Pay Mode'; 
                     metaVal = (v === '1') ? 'Cash / Full Payment' : (v === '2') ? 'Online' : (v === '3') ? 'Credit' : v;
                     isMeta = true; 
                 }
-                else if (line.startsWith('Ph:')) {
-                    if (state === 'header') {
-                        headers.push(line);
-                        continue; // Keep company phone in header
+                else if (line.startsWith('Ph:') || line.startsWith('d:') || line.startsWith('Contact:')) {
+                    let prefix = line.startsWith('Contact:') ? 'Contact:' : (line.startsWith('Ph:') ? 'Ph:' : 'd:');
+                    if (state === 'header' && line.startsWith('Ph:')) {
+                        // It's the company phone number, keep it in header
+                        headers.push('Ph: ' + getValue('Ph:'));
+                        i++; continue;
                     } else {
-                        metaLabel = 'Contact'; metaVal = line.substring(3); isMeta = true;
+                        // Customer contact
+                        metaLabel = 'Contact'; metaVal = getValue(prefix); isMeta = true;
                     }
                 }
-                else if (line.startsWith('d:')) { metaLabel = 'Contact'; metaVal = line.substring(2); isMeta = true; }
-                else if (line.startsWith('o:')) { headers.push('Ph: ' + line.substring(2).trim()); continue; }
+                else if (line.startsWith('o:')) { 
+                    headers.push('Ph: ' + getValue('o:')); 
+                    i++; continue; 
+                }
                 else if (state === 'header' && (line.startsWith('GST:') || line.startsWith('FSSAI:'))) {
-                    headers.push(line);
-                    continue; // Keep GST/FSSAI in company header
+                    // Force GST/FSSAI values to join onto the SAME line as their label!
+                    let prefix = line.startsWith('GST:') ? 'GST:' : 'FSSAI:';
+                    let val = getValue(prefix);
+                    headers.push(prefix + ' ' + val);
+                    i++; continue;
                 }
 
                 if (isMeta) {
                     state = 'meta';
-                    if (metaLabel) meta.push({ label: metaLabel, val: metaVal.trim() });
-                    continue;
+                    if (metaLabel) meta.push({ label: metaLabel, val: metaVal });
+                    i++; continue;
                 }
 
                 // 4. Anything that isn't Meta/Summary is either Header text or part of the Flat Item List
@@ -298,9 +363,11 @@
                     state = 'items';
                     flatItems.push(line);
                 }
+                
+                i++; // Advance loop manually
             }
 
-            // 5. Correctly build Items from the physical line breaks! (Fixes your screenshot issue)
+            // 5. Build Items securely from flat multi-line arrays
             if (flatItems.length >= 3 && 
                 flatItems[0].toLowerCase() === 'item' && 
                 flatItems[1].toLowerCase() === 'qty' && 
@@ -310,20 +377,23 @@
             }
 
             // Iterate over the flat array in exact chunks of 3 (Name, Qty, Amt)
-            for (let i = 0; i < flatItems.length; i += 3) {
-                let name = flatItems[i] || '';
-                let qty = flatItems[i+1] || '';
-                let price = flatItems[i+2] || '';
-                items.push({ name, qty, price });
+            for (let j = 0; j < flatItems.length; j += 3) {
+                let name = flatItems[j] || '';
+                let qty = flatItems[j+1] || '';
+                let price = flatItems[j+2] || '';
+                // Format the price with proper .00 decimals instantly
+                items.push({ name, qty, price: formatMoney(price) });
             }
 
-            // Build Exact POS Terminal HTML Structure
+            // ==============================================
+            // HTML Rendering Stage (Exact clone of pos_terminal output)
+            // ==============================================
             let html = '';
 
             if (headers.length > 0) {
                 html += `<div class="title-text">${headers[0]}</div>`;
-                for (let i = 1; i < headers.length; i++) {
-                    html += `<div class="text-center header-info">${headers[i]}</div>`;
+                for (let k = 1; k < headers.length; k++) {
+                    html += `<div class="text-center header-info">${headers[k]}</div>`;
                 }
                 html += `<div class="divider"></div>`;
             }
@@ -345,12 +415,12 @@
                 </thead>
                 <tbody>
             `;
-            items.forEach(i => {
+            items.forEach(itm => {
                 html += `
                     <tr>
-                        <td class="col-item">${i.name}</td>
-                        <td class="col-qty">${i.qty}</td>
-                        <td class="col-price">${i.price}</td>
+                        <td class="col-item">${itm.name}</td>
+                        <td class="col-qty">${itm.qty}</td>
+                        <td class="col-price">${itm.price}</td>
                     </tr>
                 `;
             });
