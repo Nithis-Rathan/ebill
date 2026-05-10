@@ -289,7 +289,6 @@
                     // Adjustments (Taxes & Charges)
                     if (line.includes(':')) {
                         // Find the LAST colon to properly separate the label from the value 
-                        // (fixes issues where "Incl.: SGST (2.5%):" broke the layout)
                         let lastColonIdx = line.lastIndexOf(':');
                         let labelStr = line.substring(0, lastColonIdx).trim();
                         let valStr = line.substring(lastColonIdx + 1).trim();
@@ -306,17 +305,21 @@
                         // Clean up extra colons in the label (e.g., "Incl.: SGST" -> "Incl. SGST")
                         labelStr = labelStr.replace(/:\s*/g, ' ').trim();
 
+                        // Fix legacy artifact where "Incl." was minified to "n" previously
+                        if (labelStr.match(/^n\s+/i)) {
+                            labelStr = labelStr.replace(/^n\s+/i, '');
+                        }
+
                         // Improve presentation: Change "Incl. SGST (2.5%)" to "SGST (2.5%) (Incl.)"
                         if (labelStr.match(/^Incl\.?\s+/i)) {
                             labelStr = labelStr.replace(/^Incl\.?\s+/i, '') + ' (Incl.)';
-                        } else if (labelStr.toLowerCase() === 'incl.' || labelStr.toLowerCase() === 'incl') {
+                        } else if (labelStr.toLowerCase() === 'incl.' || labelStr.toLowerCase() === 'incl' || labelStr.toLowerCase() === 'n') {
                             labelStr = 'Inclusive Tax';
                         }
 
                         // Fix legacy odd labels from older ebill.php replacements
                         if (labelStr.endsWith('k')) labelStr = labelStr.slice(0, -1) + ' (Charge)';
                         else if (labelStr.endsWith('l')) labelStr = labelStr.slice(0, -1) + ' (Tax)';
-                        else if (labelStr === 'n') labelStr = 'Inclusive Tax';
                         
                         if (labelStr) {
                             adjustments.push({ label: labelStr + ':', val: formatMoney(valStr) });
