@@ -4,81 +4,127 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Digital Receipt</title>
-    <!-- Tailwind CSS -->
+
+    <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- LZ-STRING INCORPORATED FOR DECOMPRESSION -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Pako library for fast browser-based decompression -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+
     <style>
-        /* Fullscreen Reset for Iframe rendering */
-        body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background-color: #f3f4f6; }
+        body {
+            background-color: #f3f4f6;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .receipt-container {
+            position: relative;
+            background: #fff;
+            padding: 2rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            /* Zig-zag jagged edge effect at the top and bottom to simulate a physical receipt */
+            background-image: 
+                radial-gradient(circle at 10px 0, transparent 10px, #fff 11px),
+                radial-gradient(circle at 10px 100%, transparent 10px, #fff 11px);
+            background-size: 20px 20px;
+            background-repeat: repeat-x;
+            background-position: top center, bottom center;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+        }
+
+        /* Hide buttons during physical or PDF printing */
+        @media print {
+            body {
+                background-color: #fff;
+            }
+            .hide-on-print {
+                display: none !important;
+            }
+            .receipt-container {
+                box-shadow: none;
+                border: none;
+                background-image: none;
+            }
+        }
     </style>
 </head>
-<body class="font-sans antialiased text-gray-800 flex items-center justify-center">
+<body class="flex items-center justify-center min-h-screen p-4">
 
-    <!-- This container holds either the loading state, the error state, or the full HTML iframe -->
-    <div id="receipt-container" class="w-full h-full flex flex-col items-center justify-center">
-        <div class="flex flex-col items-center justify-center py-10" id="loading-state">
-            <i data-lucide="loader-2" class="w-10 h-10 animate-spin text-gray-400 mb-4"></i>
-            <p class="text-gray-500 font-medium">Processing Digital Bill...</p>
+    <div class="w-full max-w-md">
+        
+        <div class="receipt-container mt-4 mb-8 rounded">
+            <!-- Receipt Header -->
+            <div class="border-b-2 border-dashed border-gray-400 pb-4 mb-4 text-center">
+                <h1 class="text-2xl font-bold uppercase tracking-widest text-gray-800">E-Bill</h1>
+                <p class="text-gray-500 text-sm mt-1">Digital Copy</p>
+            </div>
+
+            <!-- Receipt Content (dynamically populated) -->
+            <pre id="receipt-content" class="whitespace-pre-wrap text-sm leading-relaxed text-gray-800">Loading receipt data...</pre>
+            
+            <!-- Receipt Footer -->
+            <div class="border-t-2 border-dashed border-gray-400 pt-4 mt-6 text-center">
+                <p class="font-bold text-gray-700">Thank you for your visit!</p>
+                <p class="text-xs text-gray-500 mt-2">Have a great day</p>
+            </div>
         </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-3 justify-center hide-on-print">
+            <button onclick="window.print()" class="px-6 py-3 bg-gray-800 text-white font-bold rounded shadow hover:bg-black transition-colors flex-1">
+                Print / Save PDF
+            </button>
+            <a href="javascript:history.back()" class="px-6 py-3 bg-gray-200 text-gray-800 font-bold rounded shadow hover:bg-gray-300 transition-colors text-center flex-1">
+                Go Back
+            </a>
+        </div>
+
     </div>
 
     <script>
-        lucide.createIcons();
-
-        document.addEventListener("DOMContentLoaded", () => {
-            const container = document.getElementById('receipt-container');
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const cdata = params.get('cdata'); // Compressed Base64 Data
+            const data = params.get('data');   // Fallback uncompressed URI encoded data
             
-            // 1. Grab the compressed LZ-String payload from the URL hash
-            const compressedHash = window.location.hash.substring(1);
-
-            if (!compressedHash) {
-                container.innerHTML = `
-                    <div class="bg-white p-8 rounded-xl shadow-lg text-center max-w-sm">
-                        <i data-lucide="alert-circle" class="w-12 h-12 mx-auto text-red-500 mb-3"></i>
-                        <h2 class="text-xl font-bold text-gray-800">Invalid Link</h2>
-                        <p class="text-gray-500 mt-2 text-sm">No billing data was found in this QR code.</p>
-                    </div>`;
-                lucide.createIcons();
-                return;
-            }
+            const receiptContent = document.getElementById('receipt-content');
 
             try {
-                // 2. Decompress the Base62 URL-Safe string back into the raw HTML string
-                const rawHtmlString = LZString.decompressFromEncodedURIComponent(compressedHash);
-                
-                if (!rawHtmlString || rawHtmlString.trim() === '') {
-                    throw new Error("Decompression resulted in empty data");
+                if (cdata) {
+                    // 1. Revert URL-safe characters back to standard Base64
+                    let base64 = cdata.replace(/-/g, '+').replace(/_/g, '/');
+                    
+                    // 2. Pad string with "=" to ensure valid base64 length
+                    while (base64.length % 4) {
+                        base64 += '=';
+                    }
+                    
+                    // 3. Decode base64 to binary string
+                    const binaryStr = atob(base64);
+                    
+                    // 4. Convert binary string to byte array
+                    const bytes = new Uint8Array(binaryStr.length);
+                    for (let i = 0; i < binaryStr.length; i++) {
+                        bytes[i] = binaryStr.charCodeAt(i);
+                    }
+                    
+                    // 5. Decompress the byte array back to the original text using Pako
+                    const decompressedText = pako.inflateRaw(bytes, { to: 'string' });
+                    receiptContent.textContent = decompressedText;
+                } 
+                else if (data) {
+                    // Fallback logic exactly matching your uncompressed example URL
+                    receiptContent.textContent = decodeURIComponent(data);
+                } 
+                else {
+                    receiptContent.textContent = "\n\nError: No receipt data found in the URL.\n\nPlease scan a valid E-Bill QR Code.";
+                    receiptContent.classList.add("text-red-500", "text-center");
                 }
-
-                // 3. Instead of parsing JSON, render the raw HTML directly.
-                // We use an iframe to isolate the invoice's original CSS/Styles from this page's Tailwind CSS.
-                container.innerHTML = ''; // Clear loading spinner
-                
-                const iframe = document.createElement('iframe');
-                iframe.style.width = '100%';
-                iframe.style.height = '100%';
-                iframe.style.border = 'none';
-                iframe.style.backgroundColor = '#ffffff';
-                
-                container.appendChild(iframe);
-
-                // Safely write the decompressed HTML document into the iframe
-                iframe.contentWindow.document.open();
-                iframe.contentWindow.document.write(rawHtmlString);
-                iframe.contentWindow.document.close();
-
             } catch (error) {
-                console.error("Failed to parse bill HTML data", error);
-                container.innerHTML = `
-                    <div class="bg-white p-8 rounded-xl shadow-lg text-center max-w-sm">
-                        <i data-lucide="x-circle" class="w-12 h-12 mx-auto text-red-500 mb-3"></i>
-                        <h2 class="text-xl font-bold text-gray-800">Scan Error</h2>
-                        <p class="text-gray-500 mt-2 text-sm">The QR code data is corrupted or cannot be read.</p>
-                    </div>`;
-                lucide.createIcons();
+                console.error("Decoding error:", error);
+                receiptContent.textContent = "\n\nError: Unable to decode the receipt data.\n\nThe link might be broken or incomplete.";
+                receiptContent.classList.add("text-red-500", "text-center");
             }
         });
     </script>
