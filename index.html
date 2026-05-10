@@ -181,7 +181,7 @@
                 }
 
                 // Decide how to render it: if it contains our minification keys, build the exact POS table.
-                if (decompressedText.includes('a:') || decompressedText.includes('f:')) {
+                if (decompressedText.includes('Inv:') || decompressedText.includes('a:') || decompressedText.includes('Sub:') || decompressedText.includes('f:')) {
                     renderStyledReceipt(decompressedText, container);
                 } else {
                     // Fallback for very old links
@@ -202,7 +202,7 @@
 
         // This function losslessly reconstructs the Exact POS Terminal HTML Layout from the minified data
         function renderStyledReceipt(text, container) {
-            const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l !== '');
             
             let headers = [];
             let meta = [];
@@ -210,68 +210,111 @@
             let summary = { subtotal: '', grandTotal: '' };
             let adjustments = [];
 
-            for (let line of lines) {
-                // Header Meta Processing mapping from ebill.php replacements
-                if (line.startsWith('a:')) { meta.push({ label: 'Bill No', val: line.substring(2) }); continue; }
-                if (line.startsWith('b:')) { meta.push({ label: 'Date', val: line.substring(2) }); continue; }
-                if (line.startsWith('c:')) { meta.push({ label: 'Customer', val: line.substring(2) }); continue; }
-                if (line.startsWith('d:')) { meta.push({ label: 'Contact', val: line.substring(2) }); continue; }
-                if (line.startsWith('e:')) {
-                    let v = line.substring(2);
-                    let pm = (v === '1') ? 'Cash / Full Payment' : (v === '2') ? 'Online' : (v === '3') ? 'Credit' : v;
-                    meta.push({ label: 'Pay Mode', val: pm });
+            let state = 'header'; 
+            let flatItems = []; // Due to HTML formatting, Items actually arrive correctly chunked over multiple lines!
+
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i];
+
+                // 1. Trigger Summary Section
+                if (line.startsWith('Sub:') || line.startsWith('f:')) {
+                    summary.subtotal = line.startsWith('Sub:') ? line.substring(4).trim() : line.substring(2).trim();
+                    state = 'summary';
                     continue;
                 }
-                if (line.startsWith('f:')) { summary.subtotal = line.substring(2); continue; }
-                if (line.startsWith('o:')) { headers.push('Ph: ' + line.substring(2)); continue; }
 
-                // Subtotal and downwards (Taxes, Charges, Grand Total section)
-                if (summary.subtotal) {
-                    if (line.startsWith('g:')) { summary.grandTotal = line.substring(2); continue; }
-                    if (line.startsWith('h:')) { summary.advance = line.substring(2); continue; }
-                    if (line.startsWith('i:')) { summary.balance = line.substring(2); continue; }
-                    if (line.startsWith('j:')) { summary.dueDate = line.substring(2); continue; }
-                    if (line.startsWith('m:')) { adjustments.push({ label: 'Rounding:', val: line.substring(2) }); continue; }
+                // 2. Process Summary Elements
+                if (state === 'summary') {
+                    if (line.startsWith('Tot:') || line.startsWith('g:')) { summary.grandTotal = line.startsWith('Tot:') ? line.substring(4).trim() : line.substring(2).trim(); continue; }
+                    if (line.startsWith('Paid:') || line.startsWith('h:')) { summary.advance = line.startsWith('Paid:') ? line.substring(5).trim() : line.substring(2).trim(); continue; }
+                    if (line.startsWith('Due:') || line.startsWith('i:')) { summary.balance = line.startsWith('Due:') ? line.substring(4).trim() : line.substring(2).trim(); continue; }
+                    if (line.startsWith('DueDt:') || line.startsWith('j:')) { summary.dueDate = line.startsWith('DueDt:') ? line.substring(6).trim() : line.substring(2).trim(); continue; }
+                    if (line.startsWith('Rounding:') || line.startsWith('m:')) { 
+                        adjustments.push({ label: 'Rounding:', val: line.startsWith('Rounding:') ? line.substring(9).trim() : line.substring(2).trim() }); 
+                        continue; 
+                    }
                     
-                    if (line.includes('k:')) {
-                        let parts = line.split('k:');
-                        adjustments.push({ label: parts[0] + ' (charge):', val: parts[1].trim() }); continue;
+                    // Adjustments (Taxes & Charges)
+                    if (line.includes(':')) {
+                        let parts = line.split(':');
+                        let label = parts[0].trim();
+                        let val = parts.slice(1).join(':').trim();
+                        
+                        // Legacy single-letter fallbacks just in case
+                        if (label === 'k') label = 'Charge';
+                        if (label === 'l') label = 'Tax';
+                        if (label === 'n') label = 'Incl.';
+                        
+                        if (!label.endsWith(':')) label += ':';
+                        adjustments.push({ label: label, val: val });
                     }
-                    if (line.includes('l:')) {
-                        let parts = line.split('l:');
-                        adjustments.push({ label: parts[0] + ' (tax):', val: parts[1].trim() }); continue;
-                    }
-                    if (line.startsWith('n:')) {
-                        let str = line.substring(2);
-                        let splitIdx = str.lastIndexOf(':');
-                        if (splitIdx !== -1) {
-                            adjustments.push({ label: 'Incl. ' + str.substring(0, splitIdx) + ':', val: str.substring(splitIdx+1).trim() });
-                        } else {
-                            adjustments.push({ label: 'Incl.:', val: str });
-                        }
-                        continue;
-                    }
+                    continue;
                 }
 
-                // If it doesn't match the summary keys above, it is either a header (Top) or an Item
-                if (!summary.subtotal && meta.length === 0) {
-                    headers.push(line);
-                } else if (!summary.subtotal) {
-                    // Extract Items ("Product Name Qty Price")
-                    const parts = line.split(' ');
-                    if (parts.length >= 3) {
-                        const price = parts.pop();
-                        const qty = parts.pop();
-                        const name = parts.join(' ');
-                        items.push({ name, qty, price });
-                    } else if (parts.length === 2) {
-                        const price = parts.pop();
-                        const name = parts.join(' ');
-                        items.push({ name, qty: 1, price });
+                // 3. Process Header & Meta Info
+                let isMeta = false;
+                let metaLabel = '';
+                let metaVal = '';
+
+                // Matching exactly the replacements you provided in ebill.php
+                if (line.startsWith('Inv:')) { metaLabel = 'Bill No'; metaVal = line.substring(4); isMeta = true; }
+                else if (line.startsWith('a:')) { metaLabel = 'Bill No'; metaVal = line.substring(2); isMeta = true; }
+                else if (line.startsWith('Dt:')) { metaLabel = 'Date'; metaVal = line.substring(3); isMeta = true; }
+                else if (line.startsWith('b:')) { metaLabel = 'Date'; metaVal = line.substring(2); isMeta = true; }
+                else if (line.startsWith('Cust:')) { metaLabel = 'Customer'; metaVal = line.substring(5); isMeta = true; }
+                else if (line.startsWith('c:')) { metaLabel = 'Customer'; metaVal = line.substring(2); isMeta = true; }
+                else if (line.startsWith('Pay:')) { metaLabel = 'Pay Mode'; metaVal = line.substring(4); isMeta = true; }
+                else if (line.startsWith('e:')) { 
+                    let v = line.substring(2).trim();
+                    metaLabel = 'Pay Mode'; 
+                    metaVal = (v === '1') ? 'Cash / Full Payment' : (v === '2') ? 'Online' : (v === '3') ? 'Credit' : v;
+                    isMeta = true; 
+                }
+                else if (line.startsWith('Ph:')) {
+                    if (state === 'header') {
+                        headers.push(line);
+                        continue; // Keep company phone in header
                     } else {
-                        items.push({ name: line, qty: 1, price: '' });
+                        metaLabel = 'Contact'; metaVal = line.substring(3); isMeta = true;
                     }
                 }
+                else if (line.startsWith('d:')) { metaLabel = 'Contact'; metaVal = line.substring(2); isMeta = true; }
+                else if (line.startsWith('o:')) { headers.push('Ph: ' + line.substring(2).trim()); continue; }
+                else if (state === 'header' && (line.startsWith('GST:') || line.startsWith('FSSAI:'))) {
+                    headers.push(line);
+                    continue; // Keep GST/FSSAI in company header
+                }
+
+                if (isMeta) {
+                    state = 'meta';
+                    if (metaLabel) meta.push({ label: metaLabel, val: metaVal.trim() });
+                    continue;
+                }
+
+                // 4. Anything that isn't Meta/Summary is either Header text or part of the Flat Item List
+                if (state === 'header') {
+                    headers.push(line);
+                } else {
+                    state = 'items';
+                    flatItems.push(line);
+                }
+            }
+
+            // 5. Correctly build Items from the physical line breaks! (Fixes your screenshot issue)
+            if (flatItems.length >= 3 && 
+                flatItems[0].toLowerCase() === 'item' && 
+                flatItems[1].toLowerCase() === 'qty' && 
+                (flatItems[2].toLowerCase() === 'amt' || flatItems[2].toLowerCase() === 'amount' || flatItems[2].toLowerCase() === 'price')) {
+                // Drop the table header text if it exists
+                flatItems.splice(0, 3);
+            }
+
+            // Iterate over the flat array in exact chunks of 3 (Name, Qty, Amt)
+            for (let i = 0; i < flatItems.length; i += 3) {
+                let name = flatItems[i] || '';
+                let qty = flatItems[i+1] || '';
+                let price = flatItems[i+2] || '';
+                items.push({ name, qty, price });
             }
 
             // Build Exact POS Terminal HTML Structure
