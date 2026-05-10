@@ -288,17 +288,39 @@
                     
                     // Adjustments (Taxes & Charges)
                     if (line.includes(':')) {
-                        let parts = line.split(':');
-                        let labelStr = parts[0].trim();
-                        let prefix = labelStr + ':';
-                        let val = getValue(prefix);
+                        // Find the LAST colon to properly separate the label from the value 
+                        // (fixes issues where "Incl.: SGST (2.5%):" broke the layout)
+                        let lastColonIdx = line.lastIndexOf(':');
+                        let labelStr = line.substring(0, lastColonIdx).trim();
+                        let valStr = line.substring(lastColonIdx + 1).trim();
+                        
+                        // If the value was pushed to the next physical line
+                        if (!valStr && i + 1 < lines.length) {
+                            let nextLine = lines[i+1].trim();
+                            if (!nextLine.includes(':') && nextLine !== '') {
+                                valStr = nextLine;
+                                i++; // Consume the next line
+                            }
+                        }
 
-                        // Fix legacy odd labels from older ebill.php replacements (like "ACk:" -> "AC (Charge)")
+                        // Clean up extra colons in the label (e.g., "Incl.: SGST" -> "Incl. SGST")
+                        labelStr = labelStr.replace(/:\s*/g, ' ').trim();
+
+                        // Improve presentation: Change "Incl. SGST (2.5%)" to "SGST (2.5%) (Incl.)"
+                        if (labelStr.match(/^Incl\.?\s+/i)) {
+                            labelStr = labelStr.replace(/^Incl\.?\s+/i, '') + ' (Incl.)';
+                        } else if (labelStr.toLowerCase() === 'incl.' || labelStr.toLowerCase() === 'incl') {
+                            labelStr = 'Inclusive Tax';
+                        }
+
+                        // Fix legacy odd labels from older ebill.php replacements
                         if (labelStr.endsWith('k')) labelStr = labelStr.slice(0, -1) + ' (Charge)';
                         else if (labelStr.endsWith('l')) labelStr = labelStr.slice(0, -1) + ' (Tax)';
-                        else if (labelStr === 'n') labelStr = 'Incl.';
+                        else if (labelStr === 'n') labelStr = 'Inclusive Tax';
                         
-                        adjustments.push({ label: labelStr + ':', val: formatMoney(val) });
+                        if (labelStr) {
+                            adjustments.push({ label: labelStr + ':', val: formatMoney(valStr) });
+                        }
                     }
                     i++; continue;
                 }
