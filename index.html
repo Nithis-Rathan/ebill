@@ -27,14 +27,14 @@
             min-height: 100vh;
             padding: 1rem;
             margin: 0;
-            padding-bottom: 100px; /* Space for the FAB */
+            padding-bottom: 2rem;
         }
 
         /* Container to center the paper on screen with a nice shadow */
         .receipt-wrapper {
             width: 100%;
             max-width: 400px;
-            margin: 0 auto 2rem auto;
+            margin: 0 auto 1.5rem auto;
         }
 
         /* ==============================================================
@@ -140,7 +140,7 @@
             font-family: sans-serif;
         }
 
-        /* Prevent FAB text selection */
+        /* Prevent button text selection */
         .no-select {
             user-select: none;
             -webkit-user-select: none;
@@ -165,49 +165,43 @@
         </div>
     </div>
 
-    <!-- Floating Action Menu (FAB) -->
-    <div class="fixed bottom-6 right-6 flex flex-col items-end gap-3 z-40 hide-on-print font-sans no-select">
-        
-        <!-- Expanded Menu Items (Hidden by default) -->
-        <div id="fab-menu" class="flex flex-col items-end gap-3 transition-all duration-300 opacity-0 translate-y-4 pointer-events-none">
-            
-            <!-- Share Button -->
-            <button onclick="shareReceipt()" class="flex items-center gap-2 px-4 py-2 bg-white text-gray-800 rounded-full shadow-lg hover:bg-gray-50 border border-gray-100 transition-transform active:scale-95 cursor-pointer">
-                <span class="text-sm font-semibold">Share</span>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
-            </button>
+    <!-- Ad Slot Placeholder -->
+    <div id="ad-slot" class="w-full max-w-sm bg-gray-200 border border-gray-300 rounded-lg flex items-center justify-center p-4 mb-6 hide-on-print text-gray-500 text-sm font-sans text-center h-20 shadow-inner">
+        <!-- Insert your AdSense or Ad Network snippet here -->
+        <span>Advertisement Slot</span>
+    </div>
 
-            <!-- Download Image Button -->
-            <button onclick="downloadAsImage()" class="flex items-center gap-2 px-4 py-2 bg-white text-gray-800 rounded-full shadow-lg hover:bg-gray-50 border border-gray-100 transition-transform active:scale-95 cursor-pointer">
-                <span class="text-sm font-semibold">Save Image</span>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-            </button>
+    <!-- Static Action Buttons (Bottom of the page) -->
+    <div class="flex flex-row gap-3 justify-center hide-on-print w-full max-w-sm font-sans mb-6 no-select">
+        <!-- Download Image Button -->
+        <button onclick="downloadAsImage()" class="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white text-gray-800 rounded-xl shadow-md hover:bg-gray-50 border border-gray-200 transition-transform active:scale-95 cursor-pointer font-semibold text-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            Save Image
+        </button>
 
-            <!-- Download PDF Button -->
-            <button onclick="downloadAsPDF()" class="flex items-center gap-2 px-4 py-2 bg-white text-gray-800 rounded-full shadow-lg hover:bg-gray-50 border border-gray-100 transition-transform active:scale-95 cursor-pointer">
-                <span class="text-sm font-semibold">Save PDF</span>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-            </button>
+        <!-- Download PDF Button -->
+        <button onclick="downloadAsPDF()" class="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-800 text-white rounded-xl shadow-md hover:bg-black transition-transform active:scale-95 cursor-pointer font-semibold text-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            Save PDF
+        </button>
+    </div>
 
-            <!-- Print Button -->
-            <button onclick="window.print(); toggleFab();" class="flex items-center gap-2 px-4 py-2 bg-white text-gray-800 rounded-full shadow-lg hover:bg-gray-50 border border-gray-100 transition-transform active:scale-95 cursor-pointer">
-                <span class="text-sm font-semibold">Print</span>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-            </button>
-        </div>
+    <!-- Powered By Footer -->
+    <div class="text-center font-sans text-xs text-gray-500 hide-on-print mb-8">
+        Powered by <a href="https://southeastocean.com/" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700 hover:underline transition-colors">southeastocean</a>
+    </div>
 
-        <!-- Main FAB Toggle Button -->
-        <button onclick="toggleFab()" id="fab-main" class="w-14 h-14 bg-gray-800 text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-black transition-all duration-300 active:scale-90 cursor-pointer">
-            <svg id="fab-icon" class="w-6 h-6 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+    <!-- Floating Action Button (Share Only) -->
+    <div class="fixed bottom-6 right-6 z-40 hide-on-print font-sans no-select">
+        <button onclick="shareReceipt()" class="w-14 h-14 bg-blue-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-blue-700 transition-transform hover:scale-105 active:scale-90 cursor-pointer">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
         </button>
     </div>
 
     <script>
         // ==========================================
-        // FAB & MICRO-ACTIONS LOGIC
+        // MICRO-ACTIONS & BUTTON LOGIC
         // ==========================================
-        
-        let isFabOpen = false;
 
         function showToast(message) {
             const toast = document.getElementById('toast');
@@ -222,24 +216,6 @@
             }, 3000);
         }
 
-        function toggleFab() {
-            isFabOpen = !isFabOpen;
-            const menu = document.getElementById('fab-menu');
-            const icon = document.getElementById('fab-icon');
-            
-            if (isFabOpen) {
-                menu.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
-                menu.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
-                icon.style.transform = 'rotate(90deg)';
-                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>';
-            } else {
-                menu.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
-                menu.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
-                icon.style.transform = 'rotate(0deg)';
-                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>';
-            }
-        }
-
         function shareReceipt() {
             const url = window.location.href;
             if (navigator.share) {
@@ -247,13 +223,10 @@
                     title: 'Digital Receipt',
                     text: 'Here is your receipt.',
                     url: url
-                }).then(() => {
-                    toggleFab();
                 }).catch(console.error);
             } else {
                 navigator.clipboard.writeText(url).then(() => {
                     showToast("Link copied to clipboard!");
-                    toggleFab();
                 }).catch(err => {
                     showToast("Failed to copy link.");
                 });
@@ -262,7 +235,6 @@
 
         function downloadAsImage() {
             showToast("Generating image...");
-            toggleFab();
             
             const receiptElement = document.querySelector('.receipt-paper');
             if(!receiptElement) return;
@@ -288,7 +260,6 @@
 
         function downloadAsPDF() {
             showToast("Generating PDF...");
-            toggleFab();
 
             const element = document.querySelector('.receipt-paper');
             if(!element) return;
@@ -457,14 +428,12 @@
                             labelStr = labelStr.replace(/^n\s+/i, '');
                         }
 
-                        // FIXED: Replaces "(Incl.)" with "(Incl)" exactly as requested.
                         if (labelStr.match(/^Incl\.?\s+/i)) {
                             labelStr = labelStr.replace(/^Incl\.?\s+/i, '') + ' (Incl)';
                         } else if (labelStr.toLowerCase() === 'incl.' || labelStr.toLowerCase() === 'incl' || labelStr.toLowerCase() === 'n') {
                             labelStr = 'Inclusive Tax';
                         }
                         
-                        // Safety fallback to clean up any remaining "(Incl.)" artifacts
                         labelStr = labelStr.replace(/\(Incl\.\)/g, '(Incl)');
 
                         if (labelStr.endsWith('k')) labelStr = labelStr.slice(0, -1) + ' (Charge)';
