@@ -11,6 +11,12 @@
     <!-- Pako library for fast browser-based decompression -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
 
+    <!-- html2canvas for Image Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- html2pdf for PDF Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
     <style>
         body {
             background-color: #f3f4f6;
@@ -21,6 +27,7 @@
             min-height: 100vh;
             padding: 1rem;
             margin: 0;
+            padding-bottom: 100px; /* Space for the FAB */
         }
 
         /* Container to center the paper on screen with a nice shadow */
@@ -132,10 +139,24 @@
             text-align: center;
             font-family: sans-serif;
         }
+
+        /* Prevent FAB text selection */
+        .no-select {
+            user-select: none;
+            -webkit-user-select: none;
+        }
     </style>
 </head>
 <body>
-    <div class="receipt-wrapper">
+
+    <!-- Toast Notification (Micro-action feedback) -->
+    <div id="toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-5 py-3 rounded-full shadow-2xl transition-all duration-300 opacity-0 -translate-y-10 z-50 pointer-events-none flex items-center gap-2 font-sans text-sm hide-on-print">
+        <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+        <span id="toast-message">Action successful!</span>
+    </div>
+
+    <!-- Receipt Container -->
+    <div class="receipt-wrapper" id="pdf-target">
         <div id="receipt-container">
             <div class="fallback-box text-gray-500">
                 <svg class="animate-spin h-8 w-8 mx-auto mb-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
@@ -144,15 +165,158 @@
         </div>
     </div>
 
-    <!-- Action Buttons -->
-    <div class="flex flex-col sm:flex-row gap-3 justify-center hide-on-print w-full max-w-sm">
-        <button onclick="window.print()" class="px-6 py-3 bg-gray-800 text-white font-bold rounded-lg shadow hover:bg-black transition-colors flex-1 flex items-center justify-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-            Print / Save PDF
+    <!-- Floating Action Menu (FAB) -->
+    <div class="fixed bottom-6 right-6 flex flex-col items-end gap-3 z-40 hide-on-print font-sans no-select">
+        
+        <!-- Expanded Menu Items (Hidden by default) -->
+        <div id="fab-menu" class="flex flex-col items-end gap-3 transition-all duration-300 opacity-0 translate-y-4 pointer-events-none">
+            
+            <!-- Share Button -->
+            <button onclick="shareReceipt()" class="flex items-center gap-2 px-4 py-2 bg-white text-gray-800 rounded-full shadow-lg hover:bg-gray-50 border border-gray-100 transition-transform active:scale-95 cursor-pointer">
+                <span class="text-sm font-semibold">Share</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+            </button>
+
+            <!-- Download Image Button -->
+            <button onclick="downloadAsImage()" class="flex items-center gap-2 px-4 py-2 bg-white text-gray-800 rounded-full shadow-lg hover:bg-gray-50 border border-gray-100 transition-transform active:scale-95 cursor-pointer">
+                <span class="text-sm font-semibold">Save Image</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            </button>
+
+            <!-- Download PDF Button -->
+            <button onclick="downloadAsPDF()" class="flex items-center gap-2 px-4 py-2 bg-white text-gray-800 rounded-full shadow-lg hover:bg-gray-50 border border-gray-100 transition-transform active:scale-95 cursor-pointer">
+                <span class="text-sm font-semibold">Save PDF</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            </button>
+
+            <!-- Print Button -->
+            <button onclick="window.print(); toggleFab();" class="flex items-center gap-2 px-4 py-2 bg-white text-gray-800 rounded-full shadow-lg hover:bg-gray-50 border border-gray-100 transition-transform active:scale-95 cursor-pointer">
+                <span class="text-sm font-semibold">Print</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+            </button>
+        </div>
+
+        <!-- Main FAB Toggle Button -->
+        <button onclick="toggleFab()" id="fab-main" class="w-14 h-14 bg-gray-800 text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-black transition-all duration-300 active:scale-90 cursor-pointer">
+            <svg id="fab-icon" class="w-6 h-6 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
         </button>
     </div>
 
     <script>
+        // ==========================================
+        // FAB & MICRO-ACTIONS LOGIC
+        // ==========================================
+        
+        let isFabOpen = false;
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').innerText = message;
+            
+            toast.classList.remove('opacity-0', '-translate-y-10', 'pointer-events-none');
+            toast.classList.add('opacity-100', 'translate-y-0');
+            
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', '-translate-y-10', 'pointer-events-none');
+            }, 3000);
+        }
+
+        function toggleFab() {
+            isFabOpen = !isFabOpen;
+            const menu = document.getElementById('fab-menu');
+            const icon = document.getElementById('fab-icon');
+            
+            if (isFabOpen) {
+                menu.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
+                menu.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
+                icon.style.transform = 'rotate(90deg)';
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>';
+            } else {
+                menu.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
+                menu.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
+                icon.style.transform = 'rotate(0deg)';
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>';
+            }
+        }
+
+        function shareReceipt() {
+            const url = window.location.href;
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Digital Receipt',
+                    text: 'Here is your receipt.',
+                    url: url
+                }).then(() => {
+                    toggleFab();
+                }).catch(console.error);
+            } else {
+                navigator.clipboard.writeText(url).then(() => {
+                    showToast("Link copied to clipboard!");
+                    toggleFab();
+                }).catch(err => {
+                    showToast("Failed to copy link.");
+                });
+            }
+        }
+
+        function downloadAsImage() {
+            showToast("Generating image...");
+            toggleFab();
+            
+            const receiptElement = document.querySelector('.receipt-paper');
+            if(!receiptElement) return;
+
+            const originalShadow = receiptElement.style.boxShadow;
+            receiptElement.style.boxShadow = 'none';
+
+            html2canvas(receiptElement, {
+                scale: 2,
+                backgroundColor: '#ffffff'
+            }).then(canvas => {
+                receiptElement.style.boxShadow = originalShadow;
+                const image = canvas.toDataURL("image/png");
+                const link = document.createElement('a');
+                link.download = `Receipt_${new Date().getTime()}.png`;
+                link.href = image;
+                link.click();
+                showToast("Image downloaded!");
+            }).catch(err => {
+                showToast("Error saving image.");
+            });
+        }
+
+        function downloadAsPDF() {
+            showToast("Generating PDF...");
+            toggleFab();
+
+            const element = document.querySelector('.receipt-paper');
+            if(!element) return;
+
+            const originalShadow = element.style.boxShadow;
+            element.style.boxShadow = 'none';
+
+            const opt = {
+                margin:       0,
+                filename:     `Receipt_${new Date().getTime()}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'mm', format: [80, element.offsetHeight * 0.264583], orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                element.style.boxShadow = originalShadow;
+                showToast("PDF downloaded!");
+            }).catch(err => {
+                element.style.boxShadow = originalShadow;
+                showToast("Error saving PDF.");
+            });
+        }
+
+        // ==========================================
+        // RECEIPT DECOMPRESSION & RENDERING LOGIC
+        // ==========================================
+
         document.addEventListener('DOMContentLoaded', () => {
             const params = new URLSearchParams(window.location.search);
             const cdata = params.get('cdata'); 
@@ -164,7 +328,6 @@
                 let decompressedText = "";
                 
                 if (cdata) {
-                    // Revert URL-safe characters back to standard Base64
                     let base64 = cdata.replace(/-/g, '+').replace(/_/g, '/');
                     while (base64.length % 4) { base64 += '='; }
                     const binaryStr = atob(base64);
@@ -172,7 +335,6 @@
                     for (let i = 0; i < binaryStr.length; i++) {
                         bytes[i] = binaryStr.charCodeAt(i);
                     }
-                    // Decompress the string perfectly
                     decompressedText = pako.inflateRaw(bytes, { to: 'string' });
                 } else if (data) {
                     decompressedText = decodeURIComponent(data);
@@ -180,11 +342,9 @@
                     throw new Error("No data");
                 }
 
-                // Decide how to render it: if it contains our minification keys, build the exact POS table.
                 if (decompressedText.includes('Inv:') || decompressedText.includes('a:') || decompressedText.includes('Sub:') || decompressedText.includes('f:')) {
                     renderStyledReceipt(decompressedText, container);
                 } else {
-                    // Fallback for very old links
                     container.innerHTML = `<pre class="whitespace-pre-wrap text-sm leading-relaxed text-gray-800 bg-white p-6 rounded shadow">${decompressedText}</pre>`;
                 }
 
@@ -200,26 +360,22 @@
             }
         });
 
-        // Add proper decimal formatting dynamically (adds .00 and commas back safely)
         function formatMoney(val) {
             if (!val) return val;
             let numStr = val.toString().replace(/,/g, '').replace(/₹/g, '').trim();
             
-            // Extract sign to retain it (for charges/discounts)
             let isNegative = numStr.startsWith('-');
             if (isNegative) numStr = numStr.substring(1);
             let isPositive = numStr.startsWith('+');
             if (isPositive) numStr = numStr.substring(1);
 
             if (!isNaN(numStr) && numStr !== '') {
-                // Formatting back to professional currency standard
                 let formatted = parseFloat(numStr).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                 return (isNegative ? '-' : (isPositive ? '+' : '')) + formatted;
             }
             return val;
         }
 
-        // This function losslessly reconstructs the Exact POS Terminal HTML Layout from the minified data
         function renderStyledReceipt(text, container) {
             const lines = text.split('\n').map(l => l.trim()).filter(l => l !== '');
             
@@ -236,21 +392,18 @@
             while (i < lines.length) {
                 let line = lines[i];
 
-                // Helper Function: Check if the value got pushed to the next physical line
                 function getValue(prefix) {
                     let val = line.substring(prefix.length).trim();
                     if (!val && i + 1 < lines.length) {
                         let nextLine = lines[i+1].trim();
-                        // If the next line doesn't contain a colon (isn't a label itself), we grab it
                         if (!nextLine.includes(':') || nextLine.match(/^\d{2}-\d{2}-\d{4}/)) {
                             val = nextLine;
-                            i++; // Consume the next line so the loop skips it
+                            i++; 
                         }
                     }
                     return val;
                 }
 
-                // 1. Trigger Summary Section
                 if (line.startsWith('Sub:') || line.startsWith('f:') || line.startsWith('Subtotal:')) {
                     let prefix = line.startsWith('Subtotal:') ? 'Subtotal:' : (line.startsWith('Sub:') ? 'Sub:' : 'f:');
                     summary.subtotal = formatMoney(getValue(prefix));
@@ -258,7 +411,6 @@
                     i++; continue;
                 }
 
-                // 2. Process Summary Elements
                 if (state === 'summary') {
                     if (line.startsWith('Tot:') || line.startsWith('g:') || line.startsWith('Grand Total:')) { 
                         let prefix = line.startsWith('Grand Total:') ? 'Grand Total:' : (line.startsWith('Tot:') ? 'Tot:' : 'g:');
@@ -286,38 +438,35 @@
                         i++; continue; 
                     }
                     
-                    // Adjustments (Taxes & Charges)
                     if (line.includes(':')) {
-                        // Find the LAST colon to properly separate the label from the value 
                         let lastColonIdx = line.lastIndexOf(':');
                         let labelStr = line.substring(0, lastColonIdx).trim();
                         let valStr = line.substring(lastColonIdx + 1).trim();
                         
-                        // If the value was pushed to the next physical line
                         if (!valStr && i + 1 < lines.length) {
                             let nextLine = lines[i+1].trim();
                             if (!nextLine.includes(':') && nextLine !== '') {
                                 valStr = nextLine;
-                                i++; // Consume the next line
+                                i++; 
                             }
                         }
 
-                        // Clean up extra colons in the label (e.g., "Incl.: SGST" -> "Incl. SGST")
                         labelStr = labelStr.replace(/:\s*/g, ' ').trim();
 
-                        // Fix legacy artifact where "Incl." was minified to "n" previously
                         if (labelStr.match(/^n\s+/i)) {
                             labelStr = labelStr.replace(/^n\s+/i, '');
                         }
 
-                        // Improve presentation: Change "Incl. SGST (2.5%)" to "SGST (2.5%) (Incl.)"
+                        // FIXED: Replaces "(Incl.)" with "(Incl)" exactly as requested.
                         if (labelStr.match(/^Incl\.?\s+/i)) {
-                            labelStr = labelStr.replace(/^Incl\.?\s+/i, '') + ' (Incl.)';
+                            labelStr = labelStr.replace(/^Incl\.?\s+/i, '') + ' (Incl)';
                         } else if (labelStr.toLowerCase() === 'incl.' || labelStr.toLowerCase() === 'incl' || labelStr.toLowerCase() === 'n') {
                             labelStr = 'Inclusive Tax';
                         }
+                        
+                        // Safety fallback to clean up any remaining "(Incl.)" artifacts
+                        labelStr = labelStr.replace(/\(Incl\.\)/g, '(Incl)');
 
-                        // Fix legacy odd labels from older ebill.php replacements
                         if (labelStr.endsWith('k')) labelStr = labelStr.slice(0, -1) + ' (Charge)';
                         else if (labelStr.endsWith('l')) labelStr = labelStr.slice(0, -1) + ' (Tax)';
                         
@@ -328,7 +477,6 @@
                     i++; continue;
                 }
 
-                // 3. Process Header & Meta Info
                 let isMeta = false;
                 let metaLabel = '';
                 let metaVal = '';
@@ -355,11 +503,9 @@
                 else if (line.startsWith('Ph:') || line.startsWith('d:') || line.startsWith('Contact:')) {
                     let prefix = line.startsWith('Contact:') ? 'Contact:' : (line.startsWith('Ph:') ? 'Ph:' : 'd:');
                     if (state === 'header' && line.startsWith('Ph:')) {
-                        // It's the company phone number, keep it in header
                         headers.push('Ph: ' + getValue('Ph:'));
                         i++; continue;
                     } else {
-                        // Customer contact
                         metaLabel = 'Contact'; metaVal = getValue(prefix); isMeta = true;
                     }
                 }
@@ -368,7 +514,6 @@
                     i++; continue; 
                 }
                 else if (state === 'header' && (line.startsWith('GST:') || line.startsWith('FSSAI:'))) {
-                    // Force GST/FSSAI values to join onto the SAME line as their label!
                     let prefix = line.startsWith('GST:') ? 'GST:' : 'FSSAI:';
                     let val = getValue(prefix);
                     headers.push(prefix + ' ' + val);
@@ -381,7 +526,6 @@
                     i++; continue;
                 }
 
-                // 4. Anything that isn't Meta/Summary is either Header text or part of the Flat Item List
                 if (state === 'header') {
                     headers.push(line);
                 } else {
@@ -389,30 +533,23 @@
                     flatItems.push(line);
                 }
                 
-                i++; // Advance loop manually
+                i++; 
             }
 
-            // 5. Build Items securely from flat multi-line arrays
             if (flatItems.length >= 3 && 
                 flatItems[0].toLowerCase() === 'item' && 
                 flatItems[1].toLowerCase() === 'qty' && 
                 (flatItems[2].toLowerCase() === 'amt' || flatItems[2].toLowerCase() === 'amount' || flatItems[2].toLowerCase() === 'price')) {
-                // Drop the table header text if it exists
                 flatItems.splice(0, 3);
             }
 
-            // Iterate over the flat array in exact chunks of 3 (Name, Qty, Amt)
             for (let j = 0; j < flatItems.length; j += 3) {
                 let name = flatItems[j] || '';
                 let qty = flatItems[j+1] || '';
                 let price = flatItems[j+2] || '';
-                // Format the price with proper .00 decimals instantly
                 items.push({ name, qty, price: formatMoney(price) });
             }
 
-            // ==============================================
-            // HTML Rendering Stage (Exact clone of pos_terminal output)
-            // ==============================================
             let html = '';
 
             if (headers.length > 0) {
