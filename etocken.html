@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live E-Token</title>
+    
+    <!-- Pako library for Zlib decompression (required to decode the Dart payload) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Michroma&display=swap" rel="stylesheet">
+
+    <style>
+        /* =========================================
+           PAGE & TICKET STYLES
+           ========================================= */
+        body {
+            background-color: #F5F6F8;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', sans-serif;
+            color: #111827;
+        }
+
+        .ticket-container {
+            background: #ffffff;
+            border-radius: 32px;
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1);
+            padding: 40px 30px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            position: relative;
+            margin-bottom: 120px; /* Space for the bottom logo */
+        }
+
+        .clinic-name {
+            font-size: 18px;
+            font-weight: 800;
+            color: #1F4E55;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 24px;
+        }
+
+        .token-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #6B7280;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .token-number {
+            font-size: 80px;
+            font-weight: 900;
+            color: #4A9FB5;
+            line-height: 1;
+            margin: 10px 0 20px 0;
+        }
+
+        .divider {
+            width: 100%;
+            height: 2px;
+            background: repeating-linear-gradient(90deg, #E5E7EB 0, #E5E7EB 10px, transparent 10px, transparent 20px);
+            margin: 24px 0;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            text-align: left;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: #6B7280;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .info-value {
+            font-size: 16px;
+            font-weight: 800;
+            color: #1F2937;
+        }
+
+        .doctor-name {
+            color: #1F4E55;
+        }
+
+        .error-message {
+            color: #EF4444;
+            font-weight: 600;
+            display: none;
+        }
+
+        /* =========================================
+           SOUTH EAST OCEAN LOGO STYLES (Hover Animated)
+           ========================================= */
+        .logo-wrapper {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) scale(0.5); /* Scaled down for footer placement */
+            transform-origin: bottom center;
+            text-decoration: none;
+            cursor: pointer;
+            z-index: 100;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            padding: 20px;
+            font-family: 'Michroma', sans-serif;
+        }
+
+        .icon-cluster {
+            position: relative;
+            width: 72px;
+            height: 72px;
+            flex-shrink: 0;
+            /* Animation REMOVED from default state */
+        }
+
+        .dot {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+        }
+
+        /* Default Static Positions */
+        .dot.top { background-color: #1F4E55; top: 0; left: 50%; transform: translateX(-50%) translateY(0); }
+        .dot.bottom { background-color: #000000; bottom: 0; left: 50%; transform: translateX(-50%) translateY(0); }
+        .dot.left { background-color: #4A9FB5; left: 0; top: 50%; transform: translateY(-50%) translateX(0); }
+        .dot.right { background-color: #66D9CE; right: 0; top: 50%; transform: translateY(-50%) translateX(0); }
+
+        /* Keyframes from logo4.html */
+        @keyframes cluster-spin {
+            0% { transform: rotate(0deg); }
+            40% { transform: rotate(360deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes smash-top {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            20% { transform: translateX(-50%) translateY(-18px); }
+            35% { transform: translateX(-50%) translateY(11px) scale(0.95); }
+            45% { transform: translateX(-50%) translateY(-2px); }
+            55% { transform: translateX(-50%) translateY(0); }
+        }
+        @keyframes smash-bottom {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            20% { transform: translateX(-50%) translateY(18px); } 
+            35% { transform: translateX(-50%) translateY(-11px) scale(0.95); } 
+            45% { transform: translateX(-50%) translateY(2px); }
+            55% { transform: translateX(-50%) translateY(0); }
+        }
+        @keyframes smash-left {
+            0%, 100% { transform: translateY(-50%) translateX(0); }
+            20% { transform: translateY(-50%) translateX(-18px); }
+            35% { transform: translateY(-50%) translateX(11px) scale(0.95); }
+            45% { transform: translateY(-50%) translateX(-2px); }
+            55% { transform: translateY(-50%) translateX(0); }
+        }
+        @keyframes smash-right {
+            0%, 100% { transform: translateY(-50%) translateX(0); }
+            20% { transform: translateY(-50%) translateX(18px); }
+            35% { transform: translateY(-50%) translateX(-11px) scale(0.95); }
+            45% { transform: translateY(-50%) translateX(2px); }
+            55% { transform: translateY(-50%) translateX(0); }
+        }
+        @keyframes line-shock {
+            0%, 100% { transform: scaleX(1); opacity: 0.7; }
+            35% { transform: scaleX(1.05); opacity: 1; }
+        }
+
+        /* ONLY Animate on Hover */
+        .logo-wrapper:hover .icon-cluster { animation: cluster-spin 2.5s infinite ease-in-out; }
+        .logo-wrapper:hover .dot.top { animation: smash-top 2.5s infinite ease-in-out; }
+        .logo-wrapper:hover .dot.bottom { animation: smash-bottom 2.5s infinite ease-in-out; }
+        .logo-wrapper:hover .dot.left { animation: smash-left 2.5s infinite ease-in-out; }
+        .logo-wrapper:hover .dot.right { animation: smash-right 2.5s infinite ease-in-out; }
+        .logo-wrapper:hover .separator { animation: line-shock 2.5s infinite ease-in-out; }
+
+        /* Text Section */
+        .text-block {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .title {
+            font-size: 42px;
+            color: #1F4E55;
+            text-transform: uppercase;
+            font-weight: 700;
+            line-height: 1;
+            letter-spacing: -1px;
+        }
+        .separator {
+            width: 100%;
+            height: 1px;
+            background-color: #666666;
+            margin-top: 5px;
+            margin-bottom: 8px;
+            opacity: 0.7;
+            transform-origin: left;
+            /* Animation REMOVED from default state */
+        }
+        .subtitle {
+            display: flex;
+            justify-content: space-between;
+            font-size: 16px;
+            color: #40E0D0;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        @media (max-width: 600px) {
+            .logo-wrapper {
+                transform: translateX(-50%) scale(0.35); /* Smaller on mobile */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- DIGITAL TICKET DISPLAY -->
+    <div class="ticket-container" id="ticketCard">
+        <div class="clinic-name" id="clinicName">Loading...</div>
+        
+        <div class="token-label">Your Token Number</div>
+        <div class="token-number" id="tokenNumber">--</div>
+        
+        <div class="divider"></div>
+        
+        <div class="info-row">
+            <div class="info-label">Patient Name</div>
+            <div class="info-value" id="patientName">--</div>
+        </div>
+        
+        <div class="info-row">
+            <div class="info-label">Consulting</div>
+            <div class="info-value doctor-name" id="doctorName">--</div>
+        </div>
+        
+        <div class="info-row">
+            <div class="info-label">Est. Time</div>
+            <div class="info-value" id="estTime">-- mins</div>
+        </div>
+
+        <div class="error-message" id="errorMessage">
+            Invalid or missing token data in URL.
+        </div>
+    </div>
+
+    <!-- SOUTH EAST OCEAN LOGO (Links & Animates on Hover) -->
+    <a href="https://southeastocean.com" target="_blank" class="logo-wrapper">
+        <div class="logo-container">
+            <div class="icon-cluster">
+                <div class="dot top"></div>
+                <div class="dot left"></div>
+                <div class="dot right"></div>
+                <div class="dot bottom"></div>
+            </div>
+
+            <div class="text-block">
+                <div class="title">SOUTH EAST</div>
+                <div class="separator"></div>
+                <div class="subtitle">
+                    <span>O</span>
+                    <span>C</span>
+                    <span>E</span>
+                    <span>A</span>
+                    <span>N</span>
+                </div>
+            </div>
+        </div>
+    </a>
+
+    <!-- PAYLOAD DECODING LOGIC -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            let encodedPayload = urlParams.get('t');
+
+            if (encodedPayload) {
+                try {
+                    // 1. Revert Base64Url encoding generated by Dart to standard Base64
+                    let base64 = encodedPayload.replace(/-/g, '+').replace(/_/g, '/');
+                    
+                    // Pad with '=' until length is a multiple of 4
+                    while (base64.length % 4) {
+                        base64 += '=';
+                    }
+
+                    // 2. Decode Base64 to binary string
+                    const binaryString = atob(base64);
+                    
+                    // 3. Convert binary string to byte array
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+
+                    // 4. Decompress using Zlib (Pako)
+                    const decompressedBytes = pako.inflate(bytes);
+                    
+                    // 5. Convert bytes back to string
+                    const payloadString = new TextDecoder("utf-8").decode(decompressedBytes);
+                    
+                    // 6. Split payload by the '|' delimiter set in main.dart
+                    // Format: tokenNumber | patientName | doctorName | clinicName | time
+                    const payloadData = payloadString.split('|');
+
+                    if (payloadData.length >= 5) {
+                        document.getElementById('tokenNumber').innerText = payloadData[0] || '--';
+                        document.getElementById('patientName').innerText = payloadData[1] || 'Unknown';
+                        document.getElementById('doctorName').innerText = payloadData[2] || 'Unknown';
+                        document.getElementById('clinicName').innerText = payloadData[3] || 'Clinic';
+                        document.getElementById('estTime').innerText = `~${payloadData[4] || '0'} mins`;
+                    } else {
+                        throw new Error("Payload split mismatch");
+                    }
+
+                } catch (error) {
+                    console.error("Failed to decode token data:", error);
+                    showError();
+                }
+            } else {
+                showError();
+            }
+        });
+
+        function showError() {
+            document.getElementById('clinicName').innerText = "Scan Error";
+            document.getElementById('errorMessage').style.display = "block";
+            document.getElementById('tokenNumber').innerText = "!";
+        }
+    </script>
+</body>
+</html>
