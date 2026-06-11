@@ -14,12 +14,12 @@
 
     <style>
         /* =========================================
-           PAGE & TICKET STYLES
+           PAGE & LAYOUT STYLES
            ========================================= */
         body {
             background-color: #F5F6F8;
             margin: 0;
-            padding: 0;
+            padding: 24px 16px;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -27,21 +27,34 @@
             justify-content: center;
             font-family: 'Inter', sans-serif;
             color: #111827;
+            box-sizing: border-box;
             overflow-x: hidden;
         }
 
+        .main-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        /* =========================================
+           TICKET STYLES
+           ========================================= */
         .ticket-container {
             background: #ffffff;
             border-radius: 32px;
             box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1);
             padding: 40px 30px;
-            width: 90%;
-            max-width: 400px;
+            width: 100%;
             text-align: center;
             position: relative;
-            margin-top: 20px;
-            margin-bottom: 120px; /* Space for the bottom logo */
             box-sizing: border-box;
+            margin-bottom: 20px;
         }
 
         .clinic-name {
@@ -62,7 +75,7 @@
         }
 
         .token-number {
-            font-size: 80px;
+            font-size: clamp(60px, 15vw, 80px);
             font-weight: 900;
             color: #4A9FB5;
             line-height: 1;
@@ -105,6 +118,26 @@
             color: #EF4444;
             font-weight: 600;
             display: none;
+        }
+
+        /* =========================================
+           AD SLOT STYLES
+           ========================================= */
+        .ad-slot {
+            width: 100%;
+            background: #E5E7EB;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
+            margin-bottom: 40px;
+        }
+
+        .ad-slot img {
+            width: 100%;
+            height: auto;
+            display: block;
+            min-height: 80px;
+            object-fit: cover;
         }
 
         /* =========================================
@@ -166,38 +199,41 @@
         }
 
         /* =========================================
-           SOUTH EAST OCEAN LOGO STYLES
+           RESPONSIVE SOUTH EAST OCEAN LOGO
            ========================================= */
         .logo-wrapper {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%) scale(0.5);
-            transform-origin: bottom center;
             text-decoration: none;
             cursor: pointer;
             z-index: 100;
-            transition: transform 0.3s ease;
+            display: block;
+            width: 100%;
+            transition: opacity 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .logo-wrapper:hover {
+            opacity: 0.9;
         }
 
         .logo-container {
             display: flex;
             align-items: center;
-            gap: 25px;
-            padding: 20px;
+            justify-content: center;
+            gap: clamp(12px, 4vw, 25px);
+            padding: 10px;
             font-family: 'Michroma', sans-serif;
         }
 
         .icon-cluster {
             position: relative;
-            width: 72px;
-            height: 72px;
+            width: clamp(35px, 12vw, 60px);
+            height: clamp(35px, 12vw, 60px);
             flex-shrink: 0;
         }
 
         .dot {
-            width: 26px;
-            height: 26px;
+            width: clamp(12px, 4vw, 22px);
+            height: clamp(12px, 4vw, 22px);
             border-radius: 50%;
             position: absolute;
             box-shadow: 0 0 5px rgba(0,0,0,0.1);
@@ -209,10 +245,11 @@
         .dot.right { background-color: #66D9CE; right: 0; top: 50%; transform: translateY(-50%) translateX(0); }
 
         @keyframes cluster-spin { 0% { transform: rotate(0deg); } 40% { transform: rotate(360deg); } 100% { transform: rotate(360deg); } }
-        @keyframes smash-top { 0%, 100% { transform: translateX(-50%) translateY(0); } 20% { transform: translateX(-50%) translateY(-18px); } 35% { transform: translateX(-50%) translateY(11px) scale(0.95); } 45% { transform: translateX(-50%) translateY(-2px); } 55% { transform: translateX(-50%) translateY(0); } }
-        @keyframes smash-bottom { 0%, 100% { transform: translateX(-50%) translateY(0); } 20% { transform: translateX(-50%) translateY(18px); } 35% { transform: translateX(-50%) translateY(-11px) scale(0.95); } 45% { transform: translateX(-50%) translateY(2px); } 55% { transform: translateX(-50%) translateY(0); } }
-        @keyframes smash-left { 0%, 100% { transform: translateY(-50%) translateX(0); } 20% { transform: translateY(-50%) translateX(-18px); } 35% { transform: translateY(-50%) translateX(11px) scale(0.95); } 45% { transform: translateY(-50%) translateX(-2px); } 55% { transform: translateY(-50%) translateX(0); } }
-        @keyframes smash-right { 0%, 100% { transform: translateY(-50%) translateX(0); } 20% { transform: translateY(-50%) translateX(18px); } 35% { transform: translateY(-50%) translateX(-11px) scale(0.95); } 45% { transform: translateY(-50%) translateX(2px); } 55% { transform: translateY(-50%) translateX(0); } }
+        /* Using percentages for responsive smash distance */
+        @keyframes smash-top { 0%, 100% { transform: translateX(-50%) translateY(0); } 20% { transform: translateX(-50%) translateY(-100%); } 35% { transform: translateX(-50%) translateY(50%) scale(0.95); } 45% { transform: translateX(-50%) translateY(-10%); } 55% { transform: translateX(-50%) translateY(0); } }
+        @keyframes smash-bottom { 0%, 100% { transform: translateX(-50%) translateY(0); } 20% { transform: translateX(-50%) translateY(100%); } 35% { transform: translateX(-50%) translateY(-50%) scale(0.95); } 45% { transform: translateX(-50%) translateY(10%); } 55% { transform: translateX(-50%) translateY(0); } }
+        @keyframes smash-left { 0%, 100% { transform: translateY(-50%) translateX(0); } 20% { transform: translateY(-50%) translateX(-100%); } 35% { transform: translateY(-50%) translateX(50%) scale(0.95); } 45% { transform: translateY(-50%) translateX(-10%); } 55% { transform: translateY(-50%) translateX(0); } }
+        @keyframes smash-right { 0%, 100% { transform: translateY(-50%) translateX(0); } 20% { transform: translateY(-50%) translateX(100%); } 35% { transform: translateY(-50%) translateX(-50%) scale(0.95); } 45% { transform: translateY(-50%) translateX(10%); } 55% { transform: translateY(-50%) translateX(0); } }
         @keyframes line-shock { 0%, 100% { transform: scaleX(1); opacity: 0.7; } 35% { transform: scaleX(1.05); opacity: 1; } }
 
         .logo-wrapper:hover .icon-cluster { animation: cluster-spin 2.5s infinite ease-in-out; }
@@ -223,48 +260,19 @@
         .logo-wrapper:hover .separator { animation: line-shock 2.5s infinite ease-in-out; }
 
         .text-block { display: flex; flex-direction: column; justify-content: center; }
-        .title { font-size: 42px; color: #1F4E55; text-transform: uppercase; font-weight: 700; line-height: 1; letter-spacing: -1px; }
+        .title { font-size: clamp(22px, 7vw, 36px); color: #1F4E55; text-transform: uppercase; font-weight: 700; line-height: 1; letter-spacing: -1px; }
         .separator { width: 100%; height: 1px; background-color: #666666; margin-top: 5px; margin-bottom: 8px; opacity: 0.7; transform-origin: left; }
-        .subtitle { display: flex; justify-content: space-between; font-size: 16px; color: #40E0D0; font-weight: bold; text-transform: uppercase; }
+        .subtitle { display: flex; justify-content: space-between; font-size: clamp(10px, 3vw, 14px); color: #40E0D0; font-weight: bold; text-transform: uppercase; }
 
         /* =========================================
-           RESPONSIVE MEDIA QUERIES (Tablet & Mobile)
+           RESPONSIVE TWEAKS FOR VERY SMALL PHONES
            ========================================= */
-        @media (max-width: 1024px) {
-            .ticket-container {
-                margin-bottom: 100px;
-            }
-            .logo-wrapper {
-                transform: translateX(-50%) scale(0.4);
-            }
-        }
-
-        @media (max-width: 768px) {
+        @media (max-width: 600px) {
             .ticket-container {
                 padding: 30px 20px;
             }
-            .token-number {
-                font-size: 70px;
-            }
-            .fab-share {
-                bottom: 20px;
-                right: 20px;
-                width: 55px;
-                height: 55px;
-            }
-        }
-        
-        @media (max-width: 600px) {
-            .ticket-container {
-                width: 95%;
-                padding: 25px 20px;
-                margin-bottom: 90px;
-            }
             .clinic-name {
                 font-size: 16px;
-            }
-            .token-number {
-                font-size: 60px;
             }
             .info-label {
                 font-size: 11px;
@@ -272,82 +280,83 @@
             .info-value {
                 font-size: 14px;
             }
-            .logo-wrapper {
-                transform: translateX(-50%) scale(0.3);
-                bottom: 10px; /* Prevent overlap on very small screens */
-            }
             .fab-share {
                 width: 50px;
                 height: 50px;
-                bottom: 15px;
-                right: 15px;
+                bottom: 20px;
+                right: 20px;
             }
         }
     </style>
 </head>
 <body>
 
-    <div class="ticket-container" id="ticketCard">
-        <div id="ticketContent">
-            <div class="clinic-name" id="clinicName">Loading...</div>
-            
-            <div class="token-label">Your Token Number</div>
-            <div class="token-number" id="tokenNumber">--</div>
-            
-            <div class="divider"></div>
-            
-            <div class="info-row">
-                <div class="info-label">Patient Name</div>
-                <div class="info-value" id="patientName">--</div>
+    <div class="main-wrapper">
+        <!-- TICKET CARD -->
+        <div class="ticket-container" id="ticketCard">
+            <div id="ticketContent">
+                <div class="clinic-name" id="clinicName">Loading...</div>
+                
+                <div class="token-label">Your Token Number</div>
+                <div class="token-number" id="tokenNumber">--</div>
+                
+                <div class="divider"></div>
+                
+                <div class="info-row">
+                    <div class="info-label">Patient Name</div>
+                    <div class="info-value" id="patientName">--</div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="info-label">Consulting</div>
+                    <div class="info-value doctor-name" id="doctorName">--</div>
+                </div>
+                
+                <div class="error-message" id="errorMessage">
+                    Invalid or missing token data in URL.
+                </div>
             </div>
             
-            <div class="info-row">
-                <div class="info-label">Consulting</div>
-                <div class="info-value doctor-name" id="doctorName">--</div>
-            </div>
-            
-            <div class="info-row">
-                <div class="info-label">Est. Time</div>
-                <div class="info-value" id="estTime">-- mins</div>
-            </div>
-
-            <div class="error-message" id="errorMessage">
-                Invalid or missing token data in URL.
-            </div>
+            <button class="download-btn" id="downloadBtn" onclick="downloadTicket()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Download Ticket
+            </button>
         </div>
-        
-        <button class="download-btn" id="downloadBtn" onclick="downloadTicket()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            Download Ticket
-        </button>
+
+        <!-- AD SLOT -->
+        <div class="ad-slot">
+            <img src="pos.web" alt="Advertisement" onerror="this.style.display='none'">
+        </div>
+
+        <!-- FLUID RESPONSIVE LOGO -->
+        <a href="https://southeastocean.com" target="_blank" class="logo-wrapper">
+            <div class="logo-container">
+                <div class="icon-cluster">
+                    <div class="dot top"></div>
+                    <div class="dot left"></div>
+                    <div class="dot right"></div>
+                    <div class="dot bottom"></div>
+                </div>
+
+                <div class="text-block">
+                    <div class="title">SOUTH EAST</div>
+                    <div class="separator"></div>
+                    <div class="subtitle">
+                        <span>O</span>
+                        <span>C</span>
+                        <span>E</span>
+                        <span>A</span>
+                        <span>N</span>
+                    </div>
+                </div>
+            </div>
+        </a>
     </div>
 
+    <!-- SHARE BUTTON -->
     <button id="fabShare" class="fab-share" title="Share Ticket">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
     </button>
-
-    <a href="https://southeastocean.com" target="_blank" class="logo-wrapper">
-        <div class="logo-container">
-            <div class="icon-cluster">
-                <div class="dot top"></div>
-                <div class="dot left"></div>
-                <div class="dot right"></div>
-                <div class="dot bottom"></div>
-            </div>
-
-            <div class="text-block">
-                <div class="title">SOUTH EAST</div>
-                <div class="separator"></div>
-                <div class="subtitle">
-                    <span>O</span>
-                    <span>C</span>
-                    <span>E</span>
-                    <span>A</span>
-                    <span>N</span>
-                </div>
-            </div>
-        </div>
-    </a>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -379,16 +388,15 @@
                     // 5. Convert bytes back to string
                     const payloadString = new TextDecoder("utf-8").decode(decompressedBytes);
                     
-                    // 6. Split payload by the '|' delimiter set in main.dart
-                    // Format: tokenNumber | patientName | doctorName | clinicName | time
+                    // 6. Split payload by the '|' delimiter
+                    // Format: tokenNumber | patientName | doctorName | clinicName
                     const payloadData = payloadString.split('|');
 
-                    if (payloadData.length >= 5) {
+                    if (payloadData.length >= 4) {
                         document.getElementById('tokenNumber').innerText = payloadData[0] || '--';
                         document.getElementById('patientName').innerText = payloadData[1] || 'Unknown';
                         document.getElementById('doctorName').innerText = payloadData[2] || 'Unknown';
                         document.getElementById('clinicName').innerText = payloadData[3] || 'Clinic';
-                        document.getElementById('estTime').innerText = `~${payloadData[4] || '0'} mins`;
                     } else {
                         throw new Error("Payload split mismatch");
                     }
@@ -398,7 +406,6 @@
                     showError();
                 }
             } else {
-                // If there is no URL parameter, we will just show the blank template for testing purposes
                 console.log("No token data found in URL. Displaying blank template.");
             }
 
@@ -417,7 +424,6 @@
                         console.log('Error sharing:', err);
                     }
                 } else {
-                    // Fallback if Web Share API is not supported (like on desktop browsers)
                     navigator.clipboard.writeText(window.location.href).then(() => {
                         alert('Link copied to clipboard!');
                     }).catch(err => {
@@ -436,7 +442,6 @@
         // --- DOWNLOAD TICKET LOGIC ---
         function downloadTicket() {
             const btn = document.getElementById('downloadBtn');
-            const originalBtnText = btn.innerHTML;
             
             // Temporarily hide the download button so it doesn't appear in the image
             btn.style.display = 'none';
@@ -445,11 +450,11 @@
             const ticketCard = document.getElementById('ticketCard');
             const originalShadow = ticketCard.style.boxShadow;
             ticketCard.style.boxShadow = 'none';
-            ticketCard.style.border = '1px solid #E5E7EB'; // Add a subtle border instead
+            ticketCard.style.border = '1px solid #E5E7EB'; 
 
             html2canvas(ticketCard, {
                 backgroundColor: "#ffffff",
-                scale: 2, // Higher resolution image
+                scale: 2, 
             }).then(canvas => {
                 // Restore the button and styles
                 btn.style.display = 'flex';
@@ -463,7 +468,6 @@
                 link.click();
             }).catch(err => {
                 console.error("Could not generate image: ", err);
-                // Ensure UI is restored even if it fails
                 btn.style.display = 'flex';
                 ticketCard.style.boxShadow = originalShadow;
                 ticketCard.style.border = 'none';
