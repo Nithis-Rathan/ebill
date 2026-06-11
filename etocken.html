@@ -121,7 +121,7 @@
         }
 
         /* =========================================
-           AD SLOT STYLES (Simple Image)
+           AD SLOT STYLES
            ========================================= */
         .ad-slot {
             width: 100%;
@@ -129,12 +129,36 @@
             overflow: hidden;
             box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
             margin-bottom: 40px;
+            position: relative;
+            background: #E5E7EB;
+        }
+
+        .ad-slot a {
+            display: block;
+            width: 100%;
+            text-decoration: none;
         }
 
         .ad-slot img {
             width: 100%;
             height: auto;
             display: block;
+        }
+
+        .ad-label {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.4);
+            color: white;
+            font-size: 10px;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            pointer-events: none;
+            z-index: 10;
         }
 
         /* =========================================
@@ -196,24 +220,29 @@
         }
 
         /* =========================================
-           SOUTH EAST OCEAN LOGO (Exact from logo4.html)
+           SOUTH EAST OCEAN LOGO (From sidepanel.php)
            ========================================= */
-        .logo-wrapper {
-            text-decoration: none;
-            cursor: pointer;
-            z-index: 100;
-            display: flex;
-            justify-content: center;
-            width: 100%;
-            margin-bottom: 20px;
-        }
-
-        .logo-container {
+        .logo-header {
             display: flex;
             align-items: center;
-            gap: 25px;
-            padding: 20px;
+            justify-content: center;
+            cursor: pointer;
+            text-decoration: none;
+            padding: 10px 0 20px 0;
+            width: 100%;
+        }
+
+        .logo-wrapper {
+            transform: scale(0.6); 
+            display: flex;
+            align-items: center;
+            gap: 15px;
             font-family: 'Michroma', sans-serif;
+            transition: transform 0.3s;
+            margin-left: -5px; 
+            white-space: nowrap; 
+            width: 100%;
+            justify-content: center;
         }
 
         .icon-cluster {
@@ -221,6 +250,9 @@
             width: 72px;
             height: 72px;
             flex-shrink: 0;
+        }
+
+        .logo-header:hover .icon-cluster {
             animation: cluster-spin 2.5s infinite ease-in-out;
         }
 
@@ -231,25 +263,25 @@
             position: absolute;
             box-shadow: 0 0 5px rgba(0,0,0,0.1);
         }
-
+        
         @keyframes cluster-spin {
             0% { transform: rotate(0deg); }
-            40% { transform: rotate(360deg); }
-            100% { transform: rotate(360deg); }
+            40% { transform: rotate(360deg); } 
+            100% { transform: rotate(360deg); } 
         }
 
         @keyframes smash-top {
             0%, 100% { transform: translateX(-50%) translateY(0); }
-            20% { transform: translateX(-50%) translateY(-18px); }
-            35% { transform: translateX(-50%) translateY(11px) scale(0.95); }
-            45% { transform: translateX(-50%) translateY(-2px); }
-            55% { transform: translateX(-50%) translateY(0); }
+            20% { transform: translateX(-50%) translateY(-18px); } 
+            35% { transform: translateX(-50%) translateY(11px) scale(0.95); } 
+            45% { transform: translateX(-50%) translateY(-2px); } 
+            55% { transform: translateX(-50%) translateY(0); } 
         }
 
         @keyframes smash-bottom {
             0%, 100% { transform: translateX(-50%) translateY(0); }
-            20% { transform: translateX(-50%) translateY(18px); }
-            35% { transform: translateX(-50%) translateY(-11px) scale(0.95); }
+            20% { transform: translateX(-50%) translateY(18px); } 
+            35% { transform: translateX(-50%) translateY(-11px) scale(0.95); } 
             45% { transform: translateX(-50%) translateY(2px); }
             55% { transform: translateX(-50%) translateY(0); }
         }
@@ -270,21 +302,60 @@
             55% { transform: translateY(-50%) translateX(0); }
         }
 
-        .dot.top { background-color: #1F4E55; top: 0; left: 50%; transform: translateX(-50%); animation: smash-top 2.5s infinite ease-in-out; }
-        .dot.bottom { background-color: #000000; bottom: 0; left: 50%; transform: translateX(-50%); animation: smash-bottom 2.5s infinite ease-in-out; }
-        .dot.left { background-color: #4A9FB5; left: 0; top: 50%; transform: translateY(-50%); animation: smash-left 2.5s infinite ease-in-out; }
-        .dot.right { background-color: #66D9CE; right: 0; top: 50%; transform: translateY(-50%); animation: smash-right 2.5s infinite ease-in-out; }
+        .logo-header:hover .dot.top { animation: smash-top 2.5s infinite ease-in-out; }
+        .logo-header:hover .dot.bottom { animation: smash-bottom 2.5s infinite ease-in-out; }
+        .logo-header:hover .dot.left { animation: smash-left 2.5s infinite ease-in-out; }
+        .logo-header:hover .dot.right { animation: smash-right 2.5s infinite ease-in-out; }
 
-        .text-block { display: flex; flex-direction: column; justify-content: center; }
-        .title { font-size: 42px; color: #1F4E55; text-transform: uppercase; font-weight: 700; line-height: 1; letter-spacing: -1px; }
-        .separator { width: 100%; height: 1px; background-color: #666666; margin-top: 5px; margin-bottom: 8px; opacity: 0.7; transform-origin: left; animation: line-shock 2.5s infinite ease-in-out; }
+        .dot.top { background-color: #1F4E55; top: 0; left: 50%; transform: translateX(-50%); }
+        .dot.bottom { background-color: #000000; bottom: 0; left: 50%; transform: translateX(-50%); }
+        .dot.left { background-color: #4A9FB5; left: 0; top: 50%; transform: translateY(-50%); }
+        .dot.right { background-color: #66D9CE; right: 0; top: 50%; transform: translateY(-50%); }
         
+        .text-block { 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            transition: opacity 0.2s;
+            margin-top: 2px;
+            flex-shrink: 0; 
+        }
+        
+        .title { 
+            font-size: 28px; 
+            color: #1F4E55; 
+            text-transform: uppercase; 
+            font-weight: 700; 
+            line-height: 1; 
+            letter-spacing: -0.5px;
+            white-space: nowrap; 
+        }
+        
+        .separator { 
+            width: 100%; 
+            height: 1px; 
+            background-color: #666666; 
+            margin: 6px 0; 
+            opacity: 0.7; 
+        }
+        
+        .logo-header:hover .separator {
+             animation: line-shock 2.5s infinite ease-in-out;
+        }
         @keyframes line-shock {
             0%, 100% { transform: scaleX(1); opacity: 0.7; }
             35% { transform: scaleX(1.05); opacity: 1; }
         }
 
-        .subtitle { display: flex; justify-content: space-between; font-size: 16px; color: #40E0D0; font-weight: bold; text-transform: uppercase; }
+        .subtitle { 
+            display: flex; 
+            justify-content: space-between; 
+            font-size: 11px; 
+            color: #40E0D0; 
+            font-weight: bold; 
+            text-transform: uppercase;
+            white-space: nowrap; 
+        }
 
         /* =========================================
            RESPONSIVE MOBILE STYLES
@@ -297,11 +368,14 @@
             .info-value { font-size: 14px; }
             .fab-share { width: 50px; height: 50px; bottom: 20px; right: 20px; }
             
-            /* Logo Tweaks (Exact from logo4.html) */
-            .logo-container {
-                flex-direction: column;
-                gap: 20px;
-                transform: scale(0.8);
+            .logo-wrapper {
+                transform: scale(0.5); /* Scale down slightly for smaller screens */
+            }
+        }
+        
+        @media (max-width: 340px) {
+            .logo-wrapper {
+                transform: scale(0.45);
             }
         }
     </style>
@@ -340,30 +414,28 @@
             </button>
         </div>
 
-        <!-- AD SLOT -->
+        <!-- AD SLOT WITH CLICKABLE TAG -->
         <div class="ad-slot">
-            <img src="https://nithis-rathan.github.io/ebill/POS.webp" alt="Advertisement">
+            <span class="ad-label">Ad</span>
+            <a href="https://southeastocean.com/software/ocean-pos/oceanpos" target="_blank" rel="noopener noreferrer" title="Visit Sponsor">
+                <img src="https://nithis-rathan.github.io/ebill/POS.webp" alt="Advertisement">
+            </a>
         </div>
 
-        <!-- EXACT-MATCH LOGO -->
-        <a href="https://southeastocean.com" target="_blank" class="logo-wrapper">
-            <div class="logo-container">
+        <!-- EXACT-MATCH LOGO (From sidepanel.php) -->
+        <a href="https://southeastocean.com" target="_blank" class="logo-header">
+            <div class="logo-wrapper">
                 <div class="icon-cluster">
                     <div class="dot top"></div>
                     <div class="dot left"></div>
                     <div class="dot right"></div>
                     <div class="dot bottom"></div>
                 </div>
-
                 <div class="text-block">
                     <div class="title">SOUTH EAST</div>
                     <div class="separator"></div>
                     <div class="subtitle">
-                        <span>O</span>
-                        <span>C</span>
-                        <span>E</span>
-                        <span>A</span>
-                        <span>N</span>
+                        <span>O</span><span>C</span><span>E</span><span>A</span><span>N</span>
                     </div>
                 </div>
             </div>
