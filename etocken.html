@@ -121,37 +121,20 @@
         }
 
         /* =========================================
-           AD SLOT STYLES
+           AD SLOT STYLES (Simple Image)
            ========================================= */
         .ad-slot {
             width: 100%;
-            background: #E5E7EB;
             border-radius: 16px;
             overflow: hidden;
             box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
             margin-bottom: 40px;
         }
 
-        .ad-placeholder {
-            display: none; /* Shown via JS if image fails */
-            width: 100%;
-            height: 100px;
-            align-items: center;
-            justify-content: center;
-            color: #9CA3AF;
-            font-weight: 600;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            background: #F3F4F6;
-        }
-
         .ad-slot img {
             width: 100%;
             height: auto;
             display: block;
-            min-height: 80px;
-            object-fit: cover;
         }
 
         /* =========================================
@@ -213,8 +196,7 @@
         }
 
         /* =========================================
-           RESPONSIVE SOUTH EAST OCEAN LOGO
-           (Using exact logo4.html dimensions)
+           SOUTH EAST OCEAN LOGO (Exact from logo4.html)
            ========================================= */
         .logo-wrapper {
             text-decoration: none;
@@ -223,12 +205,7 @@
             display: flex;
             justify-content: center;
             width: 100%;
-            transition: opacity 0.3s ease;
             margin-bottom: 20px;
-        }
-
-        .logo-wrapper:hover {
-            opacity: 0.9;
         }
 
         .logo-container {
@@ -237,10 +214,8 @@
             gap: 25px;
             padding: 20px;
             font-family: 'Michroma', sans-serif;
-            transform-origin: center center;
         }
 
-        /* Exact icon sizes from logo4.html */
         .icon-cluster {
             position: relative;
             width: 72px;
@@ -257,7 +232,6 @@
             box-shadow: 0 0 5px rgba(0,0,0,0.1);
         }
 
-        /* Original smash animations using exact px measurements */
         @keyframes cluster-spin {
             0% { transform: rotate(0deg); }
             40% { transform: rotate(360deg); }
@@ -296,52 +270,39 @@
             55% { transform: translateY(-50%) translateX(0); }
         }
 
-        @keyframes line-shock {
-            0%, 100% { transform: scaleX(1); opacity: 0.7; }
-            35% { transform: scaleX(1.05); opacity: 1; }
-        }
-
         .dot.top { background-color: #1F4E55; top: 0; left: 50%; transform: translateX(-50%); animation: smash-top 2.5s infinite ease-in-out; }
         .dot.bottom { background-color: #000000; bottom: 0; left: 50%; transform: translateX(-50%); animation: smash-bottom 2.5s infinite ease-in-out; }
         .dot.left { background-color: #4A9FB5; left: 0; top: 50%; transform: translateY(-50%); animation: smash-left 2.5s infinite ease-in-out; }
         .dot.right { background-color: #66D9CE; right: 0; top: 50%; transform: translateY(-50%); animation: smash-right 2.5s infinite ease-in-out; }
 
         .text-block { display: flex; flex-direction: column; justify-content: center; }
-        
-        /* Exact text styling from logo4.html */
         .title { font-size: 42px; color: #1F4E55; text-transform: uppercase; font-weight: 700; line-height: 1; letter-spacing: -1px; }
         .separator { width: 100%; height: 1px; background-color: #666666; margin-top: 5px; margin-bottom: 8px; opacity: 0.7; transform-origin: left; animation: line-shock 2.5s infinite ease-in-out; }
+        
+        @keyframes line-shock {
+            0%, 100% { transform: scaleX(1); opacity: 0.7; }
+            35% { transform: scaleX(1.05); opacity: 1; }
+        }
+
         .subtitle { display: flex; justify-content: space-between; font-size: 16px; color: #40E0D0; font-weight: bold; text-transform: uppercase; }
 
         /* =========================================
-           SCALING MEDIA QUERIES
-           (Shrinks the logo without breaking its layout)
+           RESPONSIVE MOBILE STYLES
            ========================================= */
-        @media (max-width: 450px) {
-            .logo-container {
-                transform: scale(0.85);
-            }
-        }
-        
-        @media (max-width: 380px) {
-            .logo-container {
-                transform: scale(0.7);
-            }
-        }
-
-        @media (max-width: 320px) {
-            .logo-container {
-                transform: scale(0.55);
-            }
-        }
-
-        /* TWEAKS FOR VERY SMALL PHONES */
         @media (max-width: 600px) {
+            /* Ticket Tweaks */
             .ticket-container { padding: 30px 20px; }
             .clinic-name { font-size: 16px; }
             .info-label { font-size: 11px; }
             .info-value { font-size: 14px; }
             .fab-share { width: 50px; height: 50px; bottom: 20px; right: 20px; }
+            
+            /* Logo Tweaks (Exact from logo4.html) */
+            .logo-container {
+                flex-direction: column;
+                gap: 20px;
+                transform: scale(0.8);
+            }
         }
     </style>
 </head>
@@ -381,11 +342,10 @@
 
         <!-- AD SLOT -->
         <div class="ad-slot">
-            <div class="ad-placeholder">Advertisement</div>
-            <img src="pos.web" alt="Advertisement" onerror="this.style.display='none'; this.previousElementSibling.style.display='flex'">
+            <img src="pos.gif" alt="Advertisement">
         </div>
 
-        <!-- RESPONSIVE EXACT-MATCH LOGO -->
+        <!-- EXACT-MATCH LOGO -->
         <a href="https://southeastocean.com" target="_blank" class="logo-wrapper">
             <div class="logo-container">
                 <div class="icon-cluster">
