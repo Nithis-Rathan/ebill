@@ -132,6 +132,20 @@
             margin-bottom: 40px;
         }
 
+        .ad-placeholder {
+            display: none; /* Shown via JS if image fails */
+            width: 100%;
+            height: 100px;
+            align-items: center;
+            justify-content: center;
+            color: #9CA3AF;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background: #F3F4F6;
+        }
+
         .ad-slot img {
             width: 100%;
             height: auto;
@@ -200,12 +214,14 @@
 
         /* =========================================
            RESPONSIVE SOUTH EAST OCEAN LOGO
+           (Using exact logo4.html dimensions)
            ========================================= */
         .logo-wrapper {
             text-decoration: none;
             cursor: pointer;
             z-index: 100;
-            display: block;
+            display: flex;
+            justify-content: center;
             width: 100%;
             transition: opacity 0.3s ease;
             margin-bottom: 20px;
@@ -218,74 +234,114 @@
         .logo-container {
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: clamp(12px, 4vw, 25px);
-            padding: 10px;
+            gap: 25px;
+            padding: 20px;
             font-family: 'Michroma', sans-serif;
+            transform-origin: center center;
         }
 
+        /* Exact icon sizes from logo4.html */
         .icon-cluster {
             position: relative;
-            width: clamp(35px, 12vw, 60px);
-            height: clamp(35px, 12vw, 60px);
+            width: 72px;
+            height: 72px;
             flex-shrink: 0;
+            animation: cluster-spin 2.5s infinite ease-in-out;
         }
 
         .dot {
-            width: clamp(12px, 4vw, 22px);
-            height: clamp(12px, 4vw, 22px);
+            width: 26px;
+            height: 26px;
             border-radius: 50%;
             position: absolute;
             box-shadow: 0 0 5px rgba(0,0,0,0.1);
         }
 
-        .dot.top { background-color: #1F4E55; top: 0; left: 50%; transform: translateX(-50%) translateY(0); }
-        .dot.bottom { background-color: #000000; bottom: 0; left: 50%; transform: translateX(-50%) translateY(0); }
-        .dot.left { background-color: #4A9FB5; left: 0; top: 50%; transform: translateY(-50%) translateX(0); }
-        .dot.right { background-color: #66D9CE; right: 0; top: 50%; transform: translateY(-50%) translateX(0); }
+        /* Original smash animations using exact px measurements */
+        @keyframes cluster-spin {
+            0% { transform: rotate(0deg); }
+            40% { transform: rotate(360deg); }
+            100% { transform: rotate(360deg); }
+        }
 
-        @keyframes cluster-spin { 0% { transform: rotate(0deg); } 40% { transform: rotate(360deg); } 100% { transform: rotate(360deg); } }
-        /* Using percentages for responsive smash distance */
-        @keyframes smash-top { 0%, 100% { transform: translateX(-50%) translateY(0); } 20% { transform: translateX(-50%) translateY(-100%); } 35% { transform: translateX(-50%) translateY(50%) scale(0.95); } 45% { transform: translateX(-50%) translateY(-10%); } 55% { transform: translateX(-50%) translateY(0); } }
-        @keyframes smash-bottom { 0%, 100% { transform: translateX(-50%) translateY(0); } 20% { transform: translateX(-50%) translateY(100%); } 35% { transform: translateX(-50%) translateY(-50%) scale(0.95); } 45% { transform: translateX(-50%) translateY(10%); } 55% { transform: translateX(-50%) translateY(0); } }
-        @keyframes smash-left { 0%, 100% { transform: translateY(-50%) translateX(0); } 20% { transform: translateY(-50%) translateX(-100%); } 35% { transform: translateY(-50%) translateX(50%) scale(0.95); } 45% { transform: translateY(-50%) translateX(-10%); } 55% { transform: translateY(-50%) translateX(0); } }
-        @keyframes smash-right { 0%, 100% { transform: translateY(-50%) translateX(0); } 20% { transform: translateY(-50%) translateX(100%); } 35% { transform: translateY(-50%) translateX(-50%) scale(0.95); } 45% { transform: translateY(-50%) translateX(10%); } 55% { transform: translateY(-50%) translateX(0); } }
-        @keyframes line-shock { 0%, 100% { transform: scaleX(1); opacity: 0.7; } 35% { transform: scaleX(1.05); opacity: 1; } }
+        @keyframes smash-top {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            20% { transform: translateX(-50%) translateY(-18px); }
+            35% { transform: translateX(-50%) translateY(11px) scale(0.95); }
+            45% { transform: translateX(-50%) translateY(-2px); }
+            55% { transform: translateX(-50%) translateY(0); }
+        }
 
-        .logo-wrapper:hover .icon-cluster { animation: cluster-spin 2.5s infinite ease-in-out; }
-        .logo-wrapper:hover .dot.top { animation: smash-top 2.5s infinite ease-in-out; }
-        .logo-wrapper:hover .dot.bottom { animation: smash-bottom 2.5s infinite ease-in-out; }
-        .logo-wrapper:hover .dot.left { animation: smash-left 2.5s infinite ease-in-out; }
-        .logo-wrapper:hover .dot.right { animation: smash-right 2.5s infinite ease-in-out; }
-        .logo-wrapper:hover .separator { animation: line-shock 2.5s infinite ease-in-out; }
+        @keyframes smash-bottom {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            20% { transform: translateX(-50%) translateY(18px); }
+            35% { transform: translateX(-50%) translateY(-11px) scale(0.95); }
+            45% { transform: translateX(-50%) translateY(2px); }
+            55% { transform: translateX(-50%) translateY(0); }
+        }
+
+        @keyframes smash-left {
+            0%, 100% { transform: translateY(-50%) translateX(0); }
+            20% { transform: translateY(-50%) translateX(-18px); }
+            35% { transform: translateY(-50%) translateX(11px) scale(0.95); }
+            45% { transform: translateY(-50%) translateX(-2px); }
+            55% { transform: translateY(-50%) translateX(0); }
+        }
+
+        @keyframes smash-right {
+            0%, 100% { transform: translateY(-50%) translateX(0); }
+            20% { transform: translateY(-50%) translateX(18px); }
+            35% { transform: translateY(-50%) translateX(-11px) scale(0.95); }
+            45% { transform: translateY(-50%) translateX(2px); }
+            55% { transform: translateY(-50%) translateX(0); }
+        }
+
+        @keyframes line-shock {
+            0%, 100% { transform: scaleX(1); opacity: 0.7; }
+            35% { transform: scaleX(1.05); opacity: 1; }
+        }
+
+        .dot.top { background-color: #1F4E55; top: 0; left: 50%; transform: translateX(-50%); animation: smash-top 2.5s infinite ease-in-out; }
+        .dot.bottom { background-color: #000000; bottom: 0; left: 50%; transform: translateX(-50%); animation: smash-bottom 2.5s infinite ease-in-out; }
+        .dot.left { background-color: #4A9FB5; left: 0; top: 50%; transform: translateY(-50%); animation: smash-left 2.5s infinite ease-in-out; }
+        .dot.right { background-color: #66D9CE; right: 0; top: 50%; transform: translateY(-50%); animation: smash-right 2.5s infinite ease-in-out; }
 
         .text-block { display: flex; flex-direction: column; justify-content: center; }
-        .title { font-size: clamp(22px, 7vw, 36px); color: #1F4E55; text-transform: uppercase; font-weight: 700; line-height: 1; letter-spacing: -1px; }
-        .separator { width: 100%; height: 1px; background-color: #666666; margin-top: 5px; margin-bottom: 8px; opacity: 0.7; transform-origin: left; }
-        .subtitle { display: flex; justify-content: space-between; font-size: clamp(10px, 3vw, 14px); color: #40E0D0; font-weight: bold; text-transform: uppercase; }
+        
+        /* Exact text styling from logo4.html */
+        .title { font-size: 42px; color: #1F4E55; text-transform: uppercase; font-weight: 700; line-height: 1; letter-spacing: -1px; }
+        .separator { width: 100%; height: 1px; background-color: #666666; margin-top: 5px; margin-bottom: 8px; opacity: 0.7; transform-origin: left; animation: line-shock 2.5s infinite ease-in-out; }
+        .subtitle { display: flex; justify-content: space-between; font-size: 16px; color: #40E0D0; font-weight: bold; text-transform: uppercase; }
 
         /* =========================================
-           RESPONSIVE TWEAKS FOR VERY SMALL PHONES
+           SCALING MEDIA QUERIES
+           (Shrinks the logo without breaking its layout)
            ========================================= */
+        @media (max-width: 450px) {
+            .logo-container {
+                transform: scale(0.85);
+            }
+        }
+        
+        @media (max-width: 380px) {
+            .logo-container {
+                transform: scale(0.7);
+            }
+        }
+
+        @media (max-width: 320px) {
+            .logo-container {
+                transform: scale(0.55);
+            }
+        }
+
+        /* TWEAKS FOR VERY SMALL PHONES */
         @media (max-width: 600px) {
-            .ticket-container {
-                padding: 30px 20px;
-            }
-            .clinic-name {
-                font-size: 16px;
-            }
-            .info-label {
-                font-size: 11px;
-            }
-            .info-value {
-                font-size: 14px;
-            }
-            .fab-share {
-                width: 50px;
-                height: 50px;
-                bottom: 20px;
-                right: 20px;
-            }
+            .ticket-container { padding: 30px 20px; }
+            .clinic-name { font-size: 16px; }
+            .info-label { font-size: 11px; }
+            .info-value { font-size: 14px; }
+            .fab-share { width: 50px; height: 50px; bottom: 20px; right: 20px; }
         }
     </style>
 </head>
@@ -325,10 +381,11 @@
 
         <!-- AD SLOT -->
         <div class="ad-slot">
-            <img src="pos.web" alt="Advertisement" onerror="this.style.display='none'">
+            <div class="ad-placeholder">Advertisement</div>
+            <img src="pos.web" alt="Advertisement" onerror="this.style.display='none'; this.previousElementSibling.style.display='flex'">
         </div>
 
-        <!-- FLUID RESPONSIVE LOGO -->
+        <!-- RESPONSIVE EXACT-MATCH LOGO -->
         <a href="https://southeastocean.com" target="_blank" class="logo-wrapper">
             <div class="logo-container">
                 <div class="icon-cluster">
